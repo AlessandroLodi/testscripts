@@ -14,8 +14,8 @@ from scipy.optimize import curve_fit
 from matplotlib.colors import to_rgba
 import re
 from collections import OrderedDict
-from dataclass import *
-from physics_models import *
+from .dataclass import *
+from .physics_models import *
 import calendar
 
 
@@ -357,7 +357,6 @@ class QTLab_Data(Cyclic_Data):
                 # read the header of the filename
                 axes = ("x", "y")
                 if kwargs.get("readheader", True):
-                    print('hello')
                     # read the entire reader
                     header = ""
                     with open(filename, "r") as f:

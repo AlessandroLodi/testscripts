@@ -972,15 +972,12 @@ class Data:
                     comment=None,
                     encoding=None,
                     dialect=None,
-                    tupleize_cols=None,
                     error_bad_lines=True,
                     warn_bad_lines=True,
                     skipfooter=0,
-                    skip_footer=0,
                     doublequote=True,
                     delim_whitespace=False,
                     low_memory=True,
-                    buffer_lines=None,
                     memory_map=False,
                     float_precision=None,
                 )
@@ -1737,12 +1734,14 @@ class Cyclic_Data(Data):
             cyclic_axis = self.axes[0]
         shape = self._data[cyclic_axis].shape
         if len(shape) > 1:
-            # print(shape)
+            print(shape)
             dct = {}
             l = int(shape[1] / 2)
             if "forward" in method or "backward" in method:
                 l += 1
             for key in self._data:
+                print('diocaneeeeeeeee')
+                print(key)
                 dct[key] = np.empty((shape[0], l))
             for i, d in enumerate(self._data[cyclic_axis]):
 
