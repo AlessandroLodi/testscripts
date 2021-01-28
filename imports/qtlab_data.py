@@ -14,8 +14,12 @@ from scipy.optimize import curve_fit
 from matplotlib.colors import to_rgba
 import re
 from collections import OrderedDict
-from .dataclass import *
-from .physics_models import *
+
+# from .dataclass import *
+# from .physics_models import *
+
+from dataclass import *
+from physics_models import *
 import calendar
 
 
@@ -92,7 +96,9 @@ class Subplot_GVsVg(Subplot):
                     del d["Gsd"]
                 except:
                     pass
-                d["Gsd"] = d["Isd"].derive(x=d["Vsd"], method=kwargs.get("method", "savgol"))
+                d["Gsd"] = d["Isd"].derive(
+                    x=d["Vsd"], method=kwargs.get("method", "savgol")
+                )
                 d.axes = ("Vg", "Vsd", "Gsd")
                 d.ps(parent=arg)
                 datasets.append(d)
@@ -372,7 +378,6 @@ class QTLab_Data(Cyclic_Data):
                                 header += ln
                             else:
                                 break
-
                     axes = re.findall("# Column \d+:[\s\S]+?name: (.+)\n", header)
                     comments = re.findall(
                         "# ([a-zA-Z0-9_]+): ([a-zA-Z0-9_\.]+)\n", header
@@ -434,25 +439,25 @@ class QTLab_Data(Cyclic_Data):
                     comment=None,
                     encoding=None,
                     dialect=None,
-                    #tupleize_cols=None, deprecated
+                    # tupleize_cols=None, deprecated
                     error_bad_lines=True,
                     warn_bad_lines=True,
                     skipfooter=0,
-                    #skip_footer=0, deprecated
+                    # skip_footer=0, deprecated
                     doublequote=True,
                     delim_whitespace=False,
                     low_memory=True,
-                    #buffer_lines=None, deprecated
+                    # buffer_lines=None, deprecated
                     memory_map=False,
                     float_precision=None,
                 )
                 for key in kwargs:
-                    #print(f'key in kwargs are {key}')
+                    # print(f'key in kwargs are {key}')
                     if key in pandas_dct:
-                        #print(f'kwargs[key] is: {kwargs[key]}')
+                        # print(f'kwargs[key] is: {kwargs[key]}')
                         pandas_dct[key] = kwargs[key]
                 for key in pandas_dct:
-                    #print(f'key in pandas_dct is {key}')
+                    # print(f'key in pandas_dct is {key}')
                     if key in kwargs:
                         del kwargs[key]
                 del pandas_dct["names"]
@@ -492,8 +497,11 @@ class Stability_Diagram(QTLab_Data):
     def __init__(self, dat, cyclic_method="None", **kwargs):
         super().__init__(dat, **kwargs)
         if "n" not in dat:
-            w = np.where(dat[kwargs.get("Vg", "Vg")] < np.roll(dat[kwargs.get("Vg", "Vg")],  1))[0]
-            print(f"big cock {dat[kwargs.get('Vg', 'Vg')]}")
+            w = np.where(
+                dat[kwargs.get("Vg", "Vg")] < np.roll(dat[kwargs.get("Vg", "Vg")], 1)
+            )[0]
+            print(f"big cock {dat[kwargs.get('Vg', 'Isd')]}")
+            print(f"########### {kwargs}")
             c = 0
             n = []
             l = len(n)
@@ -544,6 +552,48 @@ class Stability_Diagram(QTLab_Data):
             vsd_zero = np.mean(d[np.abs(d["Isd"].values) < zero]["Vsd"].values)
             d["Isd"] -= vsd_zero
             self[self["Vg"].values == vg] = d._data
+
+    def gate_trace(self, vs):
+        ddat = self.copy()  # make a copy of the data to play with
+        # delete any extra columns.
+        try:
+            del ddat._data["TimeStamp_s"]
+            del ddat._data["MC_Temp_K"]
+            del ddat._data["n"]
+        except:
+            pass
+
+        ddat.flatten()
+        # find all vsd voltages
+        vsds = np.unique(ddat["Vsd"].values)
+        # find the difference between them and the one you want to measure
+        diff = vsds - vs
+        # pick out the vsd at the minimum
+        vsd = vsds[np.argmin(np.abs(diff))]
+        # take out only the GT at that vsd
+        ddat = ddat[(ddat["Vsd"].values == vsd)]
+        vg = ddat["Vg"].values
+        # get the unique Vg values, and the inverse array which contains indices for the Vsd elements
+        un, inverse, weigths = np.unique(vg, return_inverse=True, return_counts=True)
+        # create the multiplication matrix
+        matrix = np.zeros((len(un), len(vg)))
+        matrix[inverse, np.arange(len(vg))] = 1
+        # perform the dot product for all the keys
+        for k in ddat._data:
+            print(k)
+            ddat._data[k] = (
+                matrix.dot(np.reshape(ddat[k].values, (-1, 1))).T.flatten() / weigths
+            )
+
+        del ddat._data["Vsd"]  # remove averaged column
+        ddat.axes = ("Vg", "Isd")
+        self._gatetrace = ddat
+        return ddat
+
+        pass
+
+    def bias_trace(self, vs):
+        pass
 
     def resonance_bias_trace(self, width=0.0, centre=37):
         dat = self.copy()
@@ -605,7 +655,7 @@ class Stability_Diagram(QTLab_Data):
 
         if not func:
             func = lambda Vg, T, Vc, Gmax, alpha: physics_models.thermal_broadening(
-                Vg, self.ps("T")['T'], Vc, Gmax, alpha
+                Vg, self.ps("T")["T"], Vc, Gmax, alpha
             )
 
         gmax = np.max(dat._data["Gsd"])
@@ -632,17 +682,10 @@ class Stability_Diagram(QTLab_Data):
                 bounds["Gmax"] = [0.9, 1.1]
         if bounds:
             params, r2, fit = dat.fit(
-                func,
-                p0=p0,
-                bounds=bounds,
-                return_dict=return_dict,
+                func, p0=p0, bounds=bounds, return_dict=return_dict,
             )
         else:
-            params, r2, fit = dat.fit(
-                func,
-                p0=p0,
-                return_dict=return_dict,
-            )
+            params, r2, fit = dat.fit(func, p0=p0, return_dict=return_dict,)
         fit["Gsd"] *= gmax
         fit.ps(linewidth=1, color="k")
         self._gatetrace.ps(marker="o")
@@ -679,10 +722,7 @@ class Stability_Diagram(QTLab_Data):
         params, r2, fit = dat.fit(
             sd,
             p0=[vc, alpha, 0.6],
-            bounds=(
-                [vc - 0.1, 0, 0],
-                [vc + 0.1, 1, 1],
-            ),
+            bounds=([vc - 0.1, 0, 0], [vc + 0.1, 1, 1],),
             ignore_error=False,
             return_dict=False,
         )
@@ -733,19 +773,11 @@ class Stability_Diagram(QTLab_Data):
             params, r2, fit = dat.fit(
                 sd,
                 p0=[vc, alpha, 0.5, 0.5, 0.5],
-                bounds=(
-                    [vc - 40, 0, 0, 0, 0.05],
-                    [vc + 40, 1, 1, 1, 1],
-                ),
+                bounds=([vc - 40, 0, 0, 0, 0.05], [vc + 40, 1, 1, 1, 1],),
                 ignore_error=False,
             )
         else:
-            params, r2, fit = dat.fit(
-                sd,
-                p0=p0,
-                bounds=bounds,
-                ignore_error=False,
-            )
+            params, r2, fit = dat.fit(sd, p0=p0, bounds=bounds, ignore_error=False,)
         # params = [vc, alpha, 0.8, 0.1]
         # fit=dat.copy()
         print("Fitting data with R^2 = {:.3g}".format(r2))
@@ -856,7 +888,7 @@ class Stability_Diagram(QTLab_Data):
         vc = self.ps("Vc")
         if not vc:
             a, _ = self.fit_coulomb_peak()
-            print('mi sto incazzando')
+            print("mi sto incazzando")
             vc = a["Vc"]
         fig = Figure()
         fig.add_subplot(Subplot_FitAlpha(self, **kwargs))
@@ -872,7 +904,7 @@ class ADWin_Stability_Diagram(Stability_Diagram):
         digitise_adwin=True,
         Vsd="Vsd",
         Vg="Vg",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(dat, cyclic_method=cyclic_method, **kwargs)
         if digitise_adwin:
