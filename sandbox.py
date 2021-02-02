@@ -16,15 +16,8 @@ dset = QTLab_Dataset.find(pattern=pattern)
 dset = dset[np.argsort(dset["timestamp"])[::-1]]
 dset[dset['type']=='IVg']
 data = dset.load(QTLab_Data)
-data1 = dset.load(QTLab_Data)
-data2 = dset.load(QTLab_Data)
-
-#%%
-# data[0].cycle_to_trace(cyclic_axis='Isd', method='average')
-# print(data[0])
-# print(data[1])
-
-#%%
+# data1 = dset.load(QTLab_Data)
+# data2 = dset.load(QTLab_Data)
 
 
 #%%
@@ -35,10 +28,8 @@ for i in range(len(data)):
     fig.add_subplot(Subplot_IVg(data2[i].average_cycles(), title=f"device average_cycles {dset['device'][i]}_{i}"))
     fig.visualise(f"Figure/{folder_IVg}/method_comparison/{dset['device'][i]}_{i}.png")
 # %%
-for i in range(len(data)):
-    fig = Figure()
-    fig.add_subplot(Subplot_IVg(data[i], title=f"device {dset['device'][i]}_{i}"))
-    fig.visualise(f"Figure/{folder_IVg}/average_justload()/{dset['device'][i]}_{i}.png")
+
+print(data[0].cycle_to_trace())
 # %%
 
 # %%
