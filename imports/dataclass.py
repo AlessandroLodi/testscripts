@@ -1,5 +1,7 @@
 import calendar
 import csv
+
+import qtlab_data
 import operator as op
 import os
 import pickle
@@ -2182,27 +2184,53 @@ if __name__ == "__main__":
     from physics_models import *
     from matplotlib.colors import to_rgba
 
-    os.chdir(
-        r"G:\2021\AG_LG06_6\mol gnr_dil1to100_1phenyloctane\AG_LG06_6_IVsVg\20210118"
-    )
+    os.chdir(r"I:\2021\AG_LG07_1\mol methoxy_depo_2\AG_LG07_1_IVsVg\20210201")
     dset = QTLab_Dataset.find()
-    for i in range(len(np.unique(dset["device"]))):
-        data = dset[i].load(Stability_Diagram)
-        dat = data[0]
-        vsds = [0.1, 0.2, 0.3]
-        colors = ["red", "blue", "orange"]
+    # print(dset)
+    data = dset.load(Stability_Diagram)
+    # device = dset["device"]
+    # dat = data[0]
+    vsds = [0.1, 0.2, 0.3, 0.4, 0.5]
+    colors = np.linspace(0.1, 0.5, num=5)
+    # gatetraces = []
+    for i in range(len(data)):
         gatetraces = []
-
         for vsd, color in zip(vsds, colors):
-            gatetrace = dat.gate_trace(vsd)
+            gatetrace = data[i].gate_trace(vsd)
             gatetrace.ps(
-                linewidth=1, color=color, marker=None, label=f"$V_sd$ = {1e3*vsd} mV"
+                linewidth=1,
+                marker=None,
+                label=f"$V_b$ = {1e3*vsd} mV",
+                color=plt.cm.viridis(color),
             )
             gatetraces.append(gatetrace)
 
-        cmap = "viridis"
         fig = Figure(aspect_ratio=1, dpi=150)
-        fig.add_subplot(Subplot_IVsVg(dat))
-        fig.add_subplot(Subplot_IVg(*gatetraces, legend=True))
-        fig.visualise(f"AG_LG06_6_Figures/{i}.png")
+        fig.add_subplot(
+            Subplot_IVsVg(data[i], title=f"{dset[i]['device']}", cmap="viridis")
+        )
+        fig.add_subplot(
+            Subplot_IVg(*gatetraces, legend=True, title=f"{dset[i]['device']}")
+        )
+        fig.visualise(
+            f"figure_plot_SD_and_GT_100_500mV_100mVstep/{dset[i]['device']}_{i}.png"
+            # f"test_figure_plot_SD_and_GT_100_300mV_100mVstep/Figure_{i}.png"
+        )
+#%%
+# This below is for playing around
+# os.chdir(
+#     r"G:\2021\AG_LG06_6\mol gnr_dil1to100_1phenyloctane\AG_LG06_6_IVsVg\20210118"
+# )
+# d = QTLab_Dataset.find()
+# first_dataset = d[0]
+# print(type(first_dataset))
+# fig = Figure(aspect_ratio=1, dpi=150)
+
+#%%
+
+
+#%%
+
+
+#%%
 
