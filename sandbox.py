@@ -30,18 +30,8 @@ dset = dset[np.argsort(dset["timestamp"])[::-1]]
 for i in range(len(data)):
     fig = Figure()
     fig.add_subplot(Subplot_IVg(data[i], title=f"device pure {dset['device'][i]}_{i}"))
-    fig.add_subplot(
-        Subplot_IVg(
-            data1[i].cycle_to_trace(cyclic_axis="Isd", method="average"),
-            title=f"device cycle_to_trace {dset['device'][i]}_{i}",
-        )
-    )
-    fig.add_subplot(
-        Subplot_IVg(
-            data2[i].average_cycles(),
-            title=f"device average_cycles {dset['device'][i]}_{i}",
-        )
-    )
+    fig.add_subplot(Subplot_IVg(data1[i].cycle_to_trace(cyclic_axis="Isd", method="average"),title=f"device cycle_to_trace {dset['device'][i]}_{i}"))
+    fig.add_subplot(Subplot_IVg(data2[i].average_cycles(),title=f"device average_cycles {dset['device'][i]}_{i}"))
     fig.visualise(f"Figure/{folder_IVg}/method_comparison/{dset['device'][i]}_{i}.png")
 # %%
 
@@ -53,17 +43,9 @@ from imports.qtlab_data import *
 from imports.dataclass import *
 from imports.physics_models import *
 from matplotlib.colors import to_rgba
-
+import helper_functions 
 
 os.chdir(r"G:\2021\AG_LG06_5_GNR_anthracene")
-
-
-def match_pattern(*args) -> str:
-    m = "|".join(args)
-    pattern = ".*?(?P<folder>{}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)".format(
-        m
-    )
-    return pattern
 
 
 dir_exp = [
@@ -89,9 +71,7 @@ for f in range(len(dir_exp[1])):
         print("Figure CREATED  ya")
         print("\n")
         for dev in np.unique(dset["device"]):
-            data_single_device = exp_folder[exp_folder["device"] == dev].load(
-                Stability_Diagram
-            )
+            data_single_device = exp_folder[exp_folder["device"] == dev].load(Stability_Diagram)
             data_single_device = data_single_device[0]
             data_single_device.resample(256, 256)
             gatetraces.append(data_single_device.gate_trace(vs=0.1))
