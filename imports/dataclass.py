@@ -1,7 +1,6 @@
 import calendar
 import csv
-
-import qtlab_data
+from imports.qtlab_data import *
 import operator as op
 import os
 import pickle
@@ -611,6 +610,8 @@ class Figure:
         show=True,
     ):
         Figure.cf = self
+        params = {'legend.fontsize': 6,'legend.handlelength': 1}
+        plt.rcParams.update(params)
         if self._font:
             plt.rcParams.update(self._font)
         plt.close()
@@ -2174,48 +2175,6 @@ class Dataset:
         return return_dct if return_dict else out
 
 
-if __name__ == "__main__":
-    import os
-    import numpy as numpy
-    import matplotlib.pyplot as plt
-    import string
-    from qtlab_data import *
-    from dataclass import *
-    from physics_models import *
-    from matplotlib.colors import to_rgba
-
-    os.chdir(r"I:\2021\AG_LG07_1\mol methoxy_depo_2\AG_LG07_1_IVsVg\20210201")
-    dset = QTLab_Dataset.find()
-    # print(dset)
-    data = dset.load(Stability_Diagram)
-    # device = dset["device"]
-    # dat = data[0]
-    vsds = [0.1, 0.2, 0.3, 0.4, 0.5]
-    colors = np.linspace(0.1, 0.5, num=5)
-    # gatetraces = []
-    for i in range(len(data)):
-        gatetraces = []
-        for vsd, color in zip(vsds, colors):
-            gatetrace = data[i].gate_trace(vsd)
-            gatetrace.ps(
-                linewidth=1,
-                marker=None,
-                label=f"$V_b$ = {1e3*vsd} mV",
-                color=plt.cm.viridis(color),
-            )
-            gatetraces.append(gatetrace)
-
-        fig = Figure(aspect_ratio=1, dpi=150)
-        fig.add_subplot(
-            Subplot_IVsVg(data[i], title=f"{dset[i]['device']}", cmap="viridis")
-        )
-        fig.add_subplot(
-            Subplot_IVg(*gatetraces, legend=True, title=f"{dset[i]['device']}")
-        )
-        fig.visualise(
-            f"figure_plot_SD_and_GT_100_500mV_100mVstep/{dset[i]['device']}_{i}.png"
-            # f"test_figure_plot_SD_and_GT_100_300mV_100mVstep/Figure_{i}.png"
-        )
 #%%
 # This below is for playing around
 # os.chdir(

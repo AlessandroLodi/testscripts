@@ -15,11 +15,11 @@ from matplotlib.colors import to_rgba
 import re
 from collections import OrderedDict
 
-# from .dataclass import *
-# from .physics_models import *
+from .dataclass import *
+from .physics_models import *
 
-from dataclass import *
-from physics_models import *
+# from dataclass import *
+# from physics_models import *
 import calendar
 
 
@@ -587,13 +587,40 @@ class Stability_Diagram(QTLab_Data):
 
         del ddat._data["Vsd"]  # remove averaged column
         ddat.axes = ("Vg", "Isd")
-        self._gatetrace = ddat
+        self._gate_trace = ddat
         return ddat
 
-        pass
+    def bias_trace(self, v_gate):
+        ddat = self.copy()
+        try:
+            del ddat._data["TimeStamp_s"]
+            del ddat._data["MC_Temp_K"]
+            del ddat._data["n"]
+        except:
+            pass
 
-    def bias_trace(self, vs):
-        pass
+        ddat.flatten()
+        vg_vals = np.unique(ddat["Vg"].values)
+        diff = vg_vals - v_gate
+        vg = vg_vals[np.argmin(np.abs(diff))]
+        ddat = ddat[(ddat["Vg"].values == vg)]
+        vsd = ddat["Vsd"].values
+
+        un, inverse, weights = np.unique(vsd, return_inverse=True, return_counts=True)
+        matrix = np.zeros((len(un), len(vsd)))
+        print(matrix)
+        matrix[inverse, np.arange(len(vsd))] = 1
+
+        for k in ddat._data:
+            print(f"this is the key: {k}")
+            ddat._data[k] = (
+                matrix.dot(np.reshape(ddat[k].values, (-1, 1))).T.flatten() / weights
+            )
+
+        del ddat._data["Vg"]
+        ddat.axes = ("Vsd", "Isd")
+        self._bias_trace = ddat
+        return ddat
 
     def resonance_bias_trace(self, width=0.0, centre=37):
         dat = self.copy()
