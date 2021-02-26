@@ -1,85 +1,82 @@
+#%%
 import os
-
-import numpy as np
-from matplotlib.colors import to_rgba
-
-from imports.dataclasse import *
-from imports.qtlab_data import *
-
-try:
-    from imports.simmons import simmons
-except:
-    from imports.physics_models_p import *
-
-    simmons = physics_models.simmons
 import string
+import numpy as np
+from imports.qtlab_data import *
+from imports.dataclass import *
+from helper_functions import *
 
-os.chdir(r"H:\2021\AG_LG06_4_GNR_anthracene")
+os.chdir(r"H:\2021\AG_LG07_3")
 
 # configuration
-chipPiece = "AG_LG06_4_GNR_anthracene"
-folder_electroburn = "eburn"
-folder_molps = "mol gnr_dil1to100_1phenyloctane_r_gs_sd"
-
-
-# Have you used the piezo driver (which multiplies your voltage for 12.5 V) ?
+chip = "AG_LG_07_3"
+eburn = "eburn"
+mol = "mol spinvalve"
+mol_name = "Spin Valve DyTb"
 piezo_driver = False
 
-# subfolders and pattern matching on the files
-match = "{}|{}".format(folder_molps, folder_electroburn)
-pattern = ".*?(?P<folder>{}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)".format(
-    match
-)
-
-
-# find all QTLab files in the folder and sort them newer to the front
-dset = QTLab_Dataset.find(pattern=pattern)
+dset = QTLab_Dataset.find(pattern=pattern_matcher(eburn, mol))
 dset = dset[np.argsort(dset["timestamp"])[::-1]]
-
-print(dset)
-
-# select only the IVsVg data
 ivsvgset = dset[dset["type"] == "IVsVg"]
-
-print(ivsvgset)
-
-# ivgset = dset[dset["type"] == "IVsVg"]
-
-ivsvgset_electroburn = ivsvgset[ivsvgset["folder"] == folder_electroburn]
-print("###############")
-print("###############")
-print(ivsvgset_electroburn)
-ivsvgset_molps = ivsvgset[ivsvgset["folder"] == folder_molps]
-print("###############")
-print("###############")
-print(ivsvgset_molps)
-
-
-# loop over the devices
+ivsvgset_electroburn = ivsvgset[ivsvgset["folder"] == eburn]
+ivsvgset_molps = ivsvgset[ivsvgset["folder"] == mol]
 devices = np.unique(ivsvgset_molps["device"])
-print(devices)
+#%%
 for dev in devices:
-    if dev[0] in string.ascii_lowercase[:]:
-        d = ivsvgset_electroburn[ivsvgset_electroburn["device"] == dev]
-        fig = Figure()
-        print(d)
-        data = d.load(Stability_Diagram)
-        if data:
-            data = data[0]
-            if piezo_driver == True:
-                data["Vg"] *= 12.5
-            data.resample(256, 256)
-            pre_gt = data.zero_bias_gate_trace()
-            fig.add_subplot(Subplot_IVsVg(data, title="probe station, no GNR, RT"))
-        d_ps = ivsvgset_molps[ivsvgset_molps["device"] == dev]
-        data_molps = d_ps.load(Stability_Diagram)
-        if data_molps:
-            data_molps = data_molps[-1]
-            data_molps.resample(256, 256)
-            if piezo_driver == True:
-                data_molps["Vg"] *= 12.5
-            molps_gt = data_molps.zero_bias_gate_trace()
-            fig.add_subplot(
-                Subplot_IVsVg(data_molps, title="Device GNR Anthracene, RT")
+    current_lst = []
+    fig = Figure()
+    d = ivsvgset_electroburn[ivsvgset_electroburn["device"] == dev]
+    data = d.load(Stability_Diagram)
+    if data:
+        data = data[0]
+        current_lst.append(np.mean(np.abs(data["Isd"].values)) * 5)
+        if piezo_driver == True:
+            data["Vg"] *= 12.5
+        data.resample(256, 256)
+        fig.add_subplot(
+            Subplot_IVsVg(
+                data,
+                title=f"Dev {dev} Eburn, No {mol_name}",
+                cmap="viridis",
+                crange=(-np.max(current_lst), np.max(current_lst)),
+            ),
+        )
+    d_ps = ivsvgset_molps[ivsvgset_molps["device"] == dev]
+    data_molps = d_ps.load(Stability_Diagram)
+    if data_molps:
+        data_molps = data_molps[0]
+        current_lst.append(np.mean(np.abs(data_molps["Isd"].values)) * 5)
+        data_molps.resample(256, 256)
+        if piezo_driver == True:
+            data_molps["Vg"] *= 12.5
+        fig.add_subplot(
+            Subplot_IVsVg(
+                data_molps,
+                title=f"Dev {dev} Eburn, Yes {mol_name}",
+                cmap="viridis",
+                crange=(-np.max(current_lst), np.max(current_lst)),
             )
-            fig.visualise("Figures_SD_comparison/{}/{}.png".format(chipPiece, dev))
+        )
+        fig.visualise(f"Figures_SD_Comparison/{chip}/{dev}.png")
+
+
+#%%
+# Sandbox Cell **** Syntax Experimenting ****
+
+
+def get_dataset(data_folder: str):
+    pattern = f".*?(?P<folder>{data_folder}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)"
+    dset = QTLab_Dataset.find(pattern=pattern)
+    ivsvgset = dset[dset["type"] == "IVsVg"]
+    data_folder = ivsvgset[ivsvgset["folder"] == data_folder]
+    devices_list = np.unique(data_folder["device"])
+    return data_folder, devices_list
+
+
+exp_dir = ["eburn", "mol spinvalve"]
+
+for burn, mol in zip(*exp_dir):
+    data_eburn, device_eburn = get_dataset(burn)
+    data_mol, device_mol = get_dataset(mol)
+
+# %%

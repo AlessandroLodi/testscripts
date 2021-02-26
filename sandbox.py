@@ -1,128 +1,95 @@
 # %%
 import os
-import numpy as numpy
+import numpy as np
 import matplotlib.pyplot as plt
 import string
 from imports.qtlab_data import *
 from imports.dataclass import *
 from imports.physics_models import *
-from matplotlib.colors import to_rgba
-
-folder_IVg = "mol gnr_methoxy_dil1to100_tol_gs_sd_goodev_2ndTest"
-chipPiece = "AG_LG06_5_GNR_anthracene"
-match = "{}".format(folder_IVg)
-pattern = ".*?(?P<folder>{}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)".format(
-    match
-)
-os.chdir(r"G:\2021\AG_LG06_5_GNR_anthracene")
-dset = QTLab_Dataset.find(pattern=pattern)
-dset = dset[np.argsort(dset["timestamp"])[::-1]]
-# dset[dset["type"] == "IVsVg"]
-# data = dset.load(Stability_Diagram)
-# data1 = dset.load(QTLab_Data)
-# data2 = dset.load(QTLab_Data)
+from helper_functions import *
 
 
-#%%
-
-
-#%%
-for i in range(len(data)):
-    fig = Figure()
-    fig.add_subplot(Subplot_IVg(data[i], title=f"device pure {dset['device'][i]}_{i}"))
-    fig.add_subplot(Subplot_IVg(data1[i].cycle_to_trace(cyclic_axis="Isd", method="average"),title=f"device cycle_to_trace {dset['device'][i]}_{i}"))
-    fig.add_subplot(Subplot_IVg(data2[i].average_cycles(),title=f"device average_cycles {dset['device'][i]}_{i}"))
-    fig.visualise(f"Figure/{folder_IVg}/method_comparison/{dset['device'][i]}_{i}.png")
-# %%
-
-import os
-import numpy as numpy
-import matplotlib.pyplot as plt
-import string
-from imports.qtlab_data import *
-from imports.dataclass import *
-from imports.physics_models import *
-from matplotlib.colors import to_rgba
-import helper_functions 
-
-os.chdir(r"G:\2021\AG_LG06_5_GNR_anthracene")
-
-
-dir_exp = [
-    "mol gnr_methoxy_dil1to100_tol",
-    "mol gnr_methoxy_dil1to100_tol_checkSDuptob30",
-    "mol gnr_methoxy_dil1to100_tol_gs_sd_goodev",
-    "mol gnr_methoxy_dil1to100_tol_gs_sd_goodev",
-    "mol gnr_methoxy_dil1to100_tol_gs_sd_goodev_2ndTest",
-]
-for f in range(len(dir_exp[1])):
-
-    dset = QTLab_Dataset.find(pattern=match_pattern(dir_exp[f]))
-    print("##################")
-    print("New Dataset Loaded")
-    print("\n")
-    exp_type = dset[dset["type"] == "IVsVg"]
-    exp_folder = exp_type[exp_type["folder"] == dir_exp[f]]
-    fig = Figure()
-    current_list = []
-    gatetraces = []
-    if exp_folder:
-        print("##################")
-        print("Figure CREATED  ya")
-        print("\n")
-        for dev in np.unique(dset["device"]):
-            data_single_device = exp_folder[exp_folder["device"] == dev].load(Stability_Diagram)
-            data_single_device = data_single_device[0]
-            data_single_device.resample(256, 256)
-            gatetraces.append(data_single_device.gate_trace(vs=0.1))
-            current_mean = np.mean(np.abs(data_single_device["Isd"].values)) * 5
-        fig.add_subplot(
-            Subplot_IVsVg(
-                data_single_device,
-                title=f"Dev {dev} in\n {dir_exp[f][15:]}",
-                crange=(-current_mean, current_mean),
-                cmap="viridis",
-            )
-        )
-        fig.add_subplot(Subplot_IVg(*gatetraces, legend=True))
-        fig.visualise(f"figure_nb_test6/{dir_exp[f]}/{dev}.png")
-        print("\n")
-        print("Figure Finished ya")
-        print("##################")
-
-
-# %%
-
-# %%
-
-# %%
-import os
-import numpy as numpy
-import matplotlib.pyplot as plt
-import string
-from imports.qtlab_data import *
-from imports.dataclass import *
-from imports.physics_models import *
-from matplotlib.colors import to_rgba
-
+# Change dir and import dataset
 os.chdir(r"G:\2021\AG_LG06_6\mol gnr_dil1to100_1phenyloctane\AG_LG06_6_IVsVg\20210118")
 dset = QTLab_Dataset.find()
-print(dset)
-data = dset[0].load(Stability_Diagram)
-device = dset["device"]
-dat = data[0]
-vsds = [0.1, 0.2, 0.3]
-colors = ["red", "blue", "orange"]
-gatetraces = []
 
-for vsd, color in zip(vsds, colors):
-    gatetraces = dat.gate_trace(vsd)
-    gatetrace.ps(linewidth=1, color=color, marker=None, label=f"$V_sd$ = {1e3*vsd} mV")
-    gatetraces.append(gatetrace)
+# create the array for slice and colors. Initialise list for putting all the traces
 
-cmap = "magma"
-fig = Figure(aspect_ratio=1, dpi=150)
-fig.add_subplot(Subplot_IVsVg(dat))
-fig.add_subplot(Subplot_IVg(*gatetraces, legend=True))
-fig.visualise()
+# vsds = [x for x in np.around(np.linspace(0, 0.5, 5), decimals=2)]
+vsds = [0.500]
+colors_vsd = np.linspace(0.1, 0.5, num=len(vsds))
+gt_list = []
+dev_extracted = []
+
+#%%
+# create a device list and loop through over each device on that list
+def extract_single_column(gt):
+    return gt["Vg"][:].T, gt["Isd"][:].T
+
+
+device_list = [dev for dev in np.unique(dset["device"])]
+
+
+for i in range(len(device_list)):
+    # for each device I want GT and the right color for the colormap
+    for vsd, color in zip(vsds, colors_vsd):
+        # load a Stability_Diagram object, by indexig the dset object
+        actual_data = dset[dset["type"] == "IVsVg"][i].load(Stability_Diagram)
+        # the actual data create a list so we need to take the first element each time of that list
+        # this seems a bit stupid to me
+        actual_data = actual_data[0]
+        actual_data.resample(256, 256)
+        # gt_list.append(actual_data.gatetrace(vs=vsd))
+        gt_single = actual_data.gatetrace(vs=vsd)  # .shift_gatetrace(smooth=True)
+        vg, isd = extract_single_column(gt_single)
+        if np.log10(np.mean(isd)) > -7:
+            dev_extracted.append(device_list[i])
+            isd_rolled = np.roll(isd, (np.argmin(np.abs(vg)) - np.argmin(np.abs(isd))))
+            gt_list.append(gt_single)
+
+#%%
+dt = {}
+dt.update({"Vg": gt_list[0]["Vg"][:]})
+for i in range(len(gt_list)):
+    dt.update({f"Isd-{dev_extracted[i]}{i+1}": gt_list[i]["Isd"][:]})
+
+df = pd.DataFrame(dt)
+df.to_csv(
+    path_or_buf="GT_{dev_mol_name[0]}_{dev_mol_name[1]}.csv", sep=",", index=False
+)
+
+#%%
+dt_log = {}
+dt_log.update({"Vg [V]": gt_list[0]["Vg"][:]})
+for i in range(len(gt_list)):
+    dt_log.update(
+        {f"Isd_Log-{dev_extracted[i]}-{i+1} [A^-1]": np.log10(gt_list[i]["Isd"][:])}
+    )
+
+dev_mol_name = os.getcwd().split("\\")[2:4]
+df_log = pd.DataFrame(dt_log)
+df_log.to_csv(
+    path_or_buf=f"GT_{vsd}V_Log_NoVgShift_{dev_mol_name[0]}_{dev_mol_name[1]}.csv",
+    sep=",",
+    index=False,
+)
+
+# %%
+# Sandbox Cell **** Syntax Experimenting ****
+
+
+def add_matrix_column(mat: np.array):
+    aug_mat = np.zeros((len(mat)))
+    aug_mat[:, :-1] = mat
+    return aug_mat
+
+
+vg_col = np.zeros((len(gt_list), len(gt_list)))
+isd_col = np.zeros((len(gt_list), len(gt_list)))
+
+for i in gt_list:
+    vg_temp, isd_temp = extract_single_column(i)
+    vg_col = add_matrix_column(vg_temp)
+    isd_col = add_matrix_column(isd_temp)
+
 # %%

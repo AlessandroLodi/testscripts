@@ -553,7 +553,7 @@ class Stability_Diagram(QTLab_Data):
             d["Isd"] -= vsd_zero
             self[self["Vg"].values == vg] = d._data
 
-    def gate_trace(self, vs):
+    def gatetrace(self, vs):
         ddat = self.copy()  # make a copy of the data to play with
         # delete any extra columns.
         try:
@@ -584,11 +584,69 @@ class Stability_Diagram(QTLab_Data):
             ddat._data[k] = (
                 matrix.dot(np.reshape(ddat[k].values, (-1, 1))).T.flatten() / weigths
             )
-
         del ddat._data["Vsd"]  # remove averaged column
         ddat.axes = ("Vg", "Isd")
-        self._gate_trace = ddat
+        # self._gatetrace = ddat
         return ddat
+
+    def shift_gatetrace(self, smooth: bool = None):
+        ddat = self.copy()
+        # print(f"ddat[Isd] = {ddat['Isd']}\n ddat_data['Isd']={ddat._data['Isd']}\n")
+        if smooth:
+            ddat["Isd"] = savgol_filter(ddat["Isd"].values, 51, 3)
+        ddat._data["Isd"] = np.roll(
+            ddat["Isd"].values,
+            (
+                np.argmin(np.abs(ddat["Vg"].values))
+                - np.argmin(np.abs(ddat["Isd"].values))
+            ),
+        )
+        # print(f"ddat[Isd] = {ddat['Isd']}\n ddat_data['Isd']={ddat._data['Isd']}\n")
+        ddat.axes = ("Vg", "Isd")
+        self._gatetrace = ddat
+        return ddat
+
+    def gate_trace_derivative(self, vs, x_shift: int):
+        ddat = self.copy()  # make a copy of the data to play with
+        ddat["Gsd"] = ddat["Isd"].derive(x=ddat["Vsd"])
+        ddat.flatten()
+        # find all vsd voltages
+        vsds = np.unique(ddat["Vsd"].values)
+        # find the difference between them and the one you want to measure
+        diff = vsds - vs
+        # pick out the vsd at the minimum
+        vsd = vsds[np.argmin(np.abs(diff))]
+        # take out only the GT at that vsd
+        ddat = ddat[(ddat["Vsd"].values == vsd)]
+        vg = ddat["Vg"].values
+        # get the unique Vg values, and the inverse array which contains indices for the Vsd elements
+        un, inverse, weigths = np.unique(vg, return_inverse=True, return_counts=True)
+        # create the multiplication matrix
+        print(f"un = {un}\n vg= {vg}\n")
+        matrix = np.zeros((len(un), len(vg)))
+        matrix[inverse, np.arange(len(vg))] = 1
+        # perform the dot product for all the keys
+        for k in ddat._data:
+            if k == "Vg":
+                # shift Vg so when you take the log it won't cause problem
+                ddat._data[k] += x_shift
+            ddat._data[k] = (
+                matrix.dot(np.reshape(ddat[k].values, (-1, 1))).T.flatten() / weigths
+            )
+            ddat._data[k] = np.log10(ddat._data[k])
+
+        del ddat._data["Vsd"]  # remove averaged column
+        ddat.axes = ("Vg", "Gsd")
+        self._gate_trace_derivative = ddat
+        return ddat
+
+    def do_derivative(self, axis: str):
+        """
+        Return the derivative of the dataset
+        """
+        ddat = self.copy()
+        if axis.lower() in "Vg":
+            pass
 
     def bias_trace(self, v_gate):
         ddat = self.copy()
@@ -619,7 +677,7 @@ class Stability_Diagram(QTLab_Data):
 
         del ddat._data["Vg"]
         ddat.axes = ("Vsd", "Isd")
-        self._bias_trace = ddat
+        self._biastrace = ddat
         return ddat
 
     def resonance_bias_trace(self, width=0.0, centre=37):
@@ -674,12 +732,37 @@ class Stability_Diagram(QTLab_Data):
         self._gatetrace = ddat  # save it for later use
         return ddat
 
+    def fit_subthreshold_swing(self, func=None, p0=None, bounds=None, return_dict=True):
+        dato = self.copy()
+        # ddat.flatten()
+        dat = self._data
+        Isd = dat["Isd"]
+        Vg = dat["Vg"]
+        print("**************")
+        if not func:
+            func = lambda Isd, Vg: np.gradient(np.log10(Isd)) / (Vg[1] - Vg[0])
+
+        if not p0:
+            p0 = {}
+        if type(p0) is dict:
+            if "Gmax" in p0:
+                p0["Gmax"] /= np.max(Isd.derive(x=Vg))
+            else:
+                p0["Gmax"] = 1
+        if not bounds:
+            params, r2, fit = dato.fit(
+                func, p0=p0, bounds=bounds, return_dict=return_dict
+            )
+
+        fit.ps(linewidth=1, color="k")
+        self._gatetrace_fit = fit
+        return params, r2
+
     def fit_coulomb_peak(self, func=None, p0=None, bounds=None, return_dict=True):
         try:
             dat = self._gatetrace
         except:
             dat = self.zero_bias_gate_trace()
-
         if not func:
             func = lambda Vg, T, Vc, Gmax, alpha: physics_models.thermal_broadening(
                 Vg, self.ps("T")["T"], Vc, Gmax, alpha
@@ -712,7 +795,7 @@ class Stability_Diagram(QTLab_Data):
                 func, p0=p0, bounds=bounds, return_dict=return_dict,
             )
         else:
-            params, r2, fit = dat.fit(func, p0=p0, return_dict=return_dict,)
+            params, r2, fit = dat.fit(func, p0=p0, return_dict=return_dict)
         fit["Gsd"] *= gmax
         fit.ps(linewidth=1, color="k")
         self._gatetrace.ps(marker="o")

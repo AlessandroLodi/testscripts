@@ -270,7 +270,7 @@ class Subplot:
 class Figure:
     def __init__(
         self,
-        aspect_ratio=1.0,
+        aspect_ratio=1.5,
         rows=1,
         font=None,
         dpi=150,
@@ -610,7 +610,7 @@ class Figure:
         show=True,
     ):
         Figure.cf = self
-        params = {'legend.fontsize': 6,'legend.handlelength': 1}
+        params = {"legend.fontsize": 6, "legend.handlelength": 1}
         plt.rcParams.update(params)
         if self._font:
             plt.rcParams.update(self._font)
@@ -677,7 +677,7 @@ class Figure:
                     y,
                     self._labels[index],
                     weight="bold",
-                    fontsize=14,
+                    fontsize=6,
                     horizontalalignment="left",
                     verticalalignment="top",
                 )

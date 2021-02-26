@@ -21,7 +21,7 @@ returns:
 os.chdir(r"I:\2021\AG_LG07_1\mol methoxy_depo_2\AG_LG07_1_IVsVg\20210201")
 dset = QTLab_Dataset.find()
 data = dset.load(Stability_Diagram)
-vsds = [x for x in np.around(np.linspace(0, 0.5, 10), decimals=2)]
+vsds = [x for x in np.around(np.linspace(0, -0.5, 10), decimals=2)]
 colors = np.linspace(0.1, 0.5, num=5)
 for i in range(len(data)):
     gatetraces = []
@@ -41,5 +41,5 @@ for i in range(len(data)):
     )
     fig.add_subplot(Subplot_IVg(*gatetraces, legend=True, title=f"{dset[i]['device']}"))
     fig.visualise(
-        f"figure_plot_SD_and_GT_100_500mV_100mVstep_second_test/{dset[i]['device']}_{i}.png"
+        f"figure_plot_SD_and_GT_100_negative_500mV_100mVstep_second_test/{dset[i]['device']}_{i}.png"
     )
