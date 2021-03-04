@@ -1,5 +1,13 @@
 # Helper Functions
 
+import os
+import glob
+import shutil
+import numpy as np
+from imports.qtlab_data import *
+from imports.dataclass import *
+from imports.physics_models import *
+
 
 def match_pattern(*args) -> str:
     """
@@ -202,3 +210,89 @@ def to_excel(x, y, title: str = None):
 
 def pattern_matcher(eburn: str, mol: str):
     return f".*?(?P<folder>{eburn}|{mol}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)"
+
+
+def get_dataset(data_folder: str):
+    pattern = f".*?(?P<folder>{data_folder}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)"
+    dset = QTLab_Dataset.find(pattern=pattern)
+    ivsvgset = dset[dset["type"] == "IVsVg"]
+    data_folder = ivsvgset[ivsvgset["folder"] == data_folder]
+    devices_list = np.unique(data_folder["device"])
+    return data_folder, devices_list
+
+
+def func(dirname):
+    if os.path.exists(os.path.join(dirname, ".dat")):
+        c = 0
+        for roots, dir, files in os.walk(dirname):
+            c += len([f for f in files if f.endswith(".dat")])
+        print(f"{dirname} has {c} number of dat")
+
+
+# func('E:\\AG_LG06_4_GNR_anthracene\\')
+
+
+def func2(dirname, test):
+    for root, dirs, files in os.walk(dirname):
+        d = [f for f in files if f.endswith(".dat") and f]
+        if d and d is not None:
+            # this just replace the string but doesnt actually change the filename
+            a = (", ".join(str(i) for i in d)).replace(
+                "GNR_anthracene", "GNR-2_anthracene"
+            )
+            print(a)
+            # print(f'length of a: {len(a)} and length of d: {len(d)}')
+            # shutil.copy(a, test)
+
+
+def copy_allFiles(path, dst):
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+    for root, dirs, files in os.walk(path):
+        for f in files:
+            path_file = os.path.join(root, f)
+            shutil.copy2(path_file, dst)
+
+
+def rename(path, old, new):
+    # os.chdir(path)
+    for t in os.walk(path):
+        # os.walk returns a tuple so i walk thr the tuple to get the individual lists
+        for l in t:
+            # the first two things are garbage so remove them
+            str1 = ",".join(l[2:])
+            os.rename(
+                os.path.join(path, str1), os.path.join(path, str1.replace(old, new))
+            )
+
+
+def rename_filenames(path, old_string, new_string):
+    os.chdir(path)
+    for f in os.listdir(path):
+        if old_string in f:
+            os.rename(
+                os.path.join(path, f),
+                os.path.join(path, f.replace(old_string, new_string)),
+            )
+
+
+def replace_noInPlace(path, dst):
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+    os.chdir(path)
+    for roots, dir, files in os.walk(path):
+        for f in files:
+            f.replace("GNR_anthracene", "GNR-2_anthracene")
+
+
+def grab_just_SD(path):
+    for roots, dirs, files in os.walk(path):
+        for f in files:
+            if f.endswith("dat") and "IVsVg" in f:
+                QTLab_Dataset.find().load(Stability_Diagram)
+
+
+def data_folder(path):
+    for dirs in os.walk(path):
+        if "burn" or "mol" in dirs:
+            print(dirs)

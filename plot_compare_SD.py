@@ -6,12 +6,12 @@ from imports.qtlab_data import *
 from imports.dataclass import *
 from helper_functions import *
 
-os.chdir(r"H:\2021\AG_LG07_3")
+os.chdir(r"I:\Probe Station\AG_LG_5")
 
 # configuration
-chip = "AG_LG_07_3"
+chip = "AG_LG_5"
 eburn = "eburn"
-mol = "mol spinvalve"
+mol = "mol spinvalve_DyTb"
 mol_name = "Spin Valve DyTb"
 piezo_driver = False
 
@@ -62,15 +62,6 @@ for dev in devices:
 
 #%%
 # Sandbox Cell **** Syntax Experimenting ****
-
-
-def get_dataset(data_folder: str):
-    pattern = f".*?(?P<folder>{data_folder}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)"
-    dset = QTLab_Dataset.find(pattern=pattern)
-    ivsvgset = dset[dset["type"] == "IVsVg"]
-    data_folder = ivsvgset[ivsvgset["folder"] == data_folder]
-    devices_list = np.unique(data_folder["device"])
-    return data_folder, devices_list
 
 
 exp_dir = ["eburn", "mol spinvalve"]
