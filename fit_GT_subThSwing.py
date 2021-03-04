@@ -53,7 +53,7 @@ for i in range(len(data)):
         y_min = np.min(trace["Isd"].values)
         vg_points = trace["Vg"].values
         isd_pts = trace["Isd"].values * 1e6
-        isd_pts_derivative = 
+        # isd_pts_derivative =
         isd_min, isd_max = (
             np.min(isd_pts[: np.argmin(isd_pts)]),
             np.max(isd_pts[: np.argmin(isd_pts)]),
@@ -120,8 +120,8 @@ for i in range(len(data)):
 # %%
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
-ax1.scatter(gt['Vg'][:], gt['Isd'][:])
-ax1.plot(gt['Vg'][:], sub_th, color="orange")
+ax1.scatter(gt["Vg"][:], gt["Isd"][:])
+ax1.plot(gt["Vg"][:], sub_th, color="orange")
 ax1.set_yscale("log")
 plt.title("Subthreshold Swing")
 plt.show()

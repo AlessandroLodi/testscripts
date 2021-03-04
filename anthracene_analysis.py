@@ -43,15 +43,16 @@ for single_dataset in range(len(exp_lst)):
 def extract_single_column(gt):
     return gt["Vg"][:].T, gt["Isd"][:].T
 
+
 vsds = [0.500]
 colors_vsd = np.linspace(0.1, 0.5, num=len(vsds))
 gt_list = []
 dev_extracted = []
 for i in range(len(dset)):
     dataset = dset[i]
-    dataset_type = dataset[dataset['type'] == 'IVsVg']
+    dataset_type = dataset[dataset["type"] == "IVsVg"]
     if dataset_type:
-        devices_dataset = np.unique(dataset_type['device'])
+        devices_dataset = np.unique(dataset_type["device"])
         for j in range(len(devices_dataset)):
             for vsd, color in zip(vsds, colors_vsd):
                 try:
@@ -62,7 +63,9 @@ for i in range(len(dset)):
                     Vg, Isd = extract_single_column(gate_trace_single)
                     if np.log10(np.mean(Isd)) > -7:
                         dev_extracted.append(devices_dataset[j])
-                        Isd_rolled = np.roll(Isd,np.argmin(np.abs(Vg)) - np.argmin(np.abs(Isd)))
+                        Isd_rolled = np.roll(
+                            Isd, np.argmin(np.abs(Vg)) - np.argmin(np.abs(Isd))
+                        )
                         gt_list.append(gate_trace_single)
                 except AttributeError:
                     continue
