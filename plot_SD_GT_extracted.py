@@ -18,28 +18,30 @@ returns:
     .png file
 """
 
-os.chdir(r"I:\2021\AG_LG07_1\mol methoxy_depo_2\AG_LG07_1_IVsVg\20210201")
+os.chdir(r"I:\2019\alessandrofet\stabdiag\stabdiag\stabdiag_IVsVg")
 dset = QTLab_Dataset.find()
 data = dset.load(Stability_Diagram)
-vsds = [x for x in np.around(np.linspace(0, -0.5, 10), decimals=2)]
-colors = np.linspace(0.1, 0.5, num=5)
+max_vsd = 0.39
+vsds = [x for x in np.around(np.linspace(0, max_vsd, num=5), decimals=2)]
+colors = np.linspace(0.1, max_vsd, num=5)
 for i in range(len(data)):
     gatetraces = []
     for vsd, color in zip(vsds, colors):
-        gatetrace = data[i].gate_trace(vsd)
-        gatetrace.ps(
+        gate_trace = data[i].gatetrace(vsd)
+        gate_trace.ps(
             linewidth=1,
             marker=None,
             label=f"$V_b$ = {1e3*vsd} mV",
             color=plt.cm.viridis(color),
+            yrange=(-0.2, 0.2),
         )
-        gatetraces.append(gatetrace)
+        gatetraces.append(gate_trace)
 
     fig = Figure(aspect_ratio=1, dpi=150)
     fig.add_subplot(
         Subplot_IVsVg(data[i], title=f"{dset[i]['device']}", cmap="viridis")
     )
     fig.add_subplot(Subplot_IVg(*gatetraces, legend=True, title=f"{dset[i]['device']}"))
-    fig.visualise(
-        f"figure_plot_SD_and_GT_100_negative_500mV_100mVstep_second_test/{dset[i]['device']}_{i}.png"
-    )
+    fig.visualise(f"figure_plot_SD_GT_positve/{dset[i]['device']}_{i}.png")
+
+# %%

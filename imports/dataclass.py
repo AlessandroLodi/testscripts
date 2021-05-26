@@ -42,49 +42,50 @@ from inspect import signature
 
 from scipy.io import loadmat
 
-std_colors = [
-    "#e41a1c",
-    "#377eb8",
-    "#4daf4a",
-    "#984ea3",
-    "#ff7f00",
-    "#ffff33",
-    "#a65628",
-    "#f781bf",
-]
-_colornames = ["red", "blue", "green", "purple", "orange", "yellow", "brown", "pink"]
-color_dct = {}
-for key, value in zip(_colornames, std_colors):
-    color_dct[key] = value
+# std_colors = [
+#     "#e41a1c",
+#     "#377eb8",
+#     "#4daf4a",
+#     "#984ea3",
+#     "#ff7f00",
+#     "#ffff33",
+#     "#a65628",
+#     "#f781bf",
+# ]
+# _colornames = ["red", "blue", "green", "purple", "orange", "yellow", "brown", "pink"]
+# color_dct = {}
+# for key, value in zip(_colornames, std_colors):
+#     color_dct[key] = value
 
 
-# plt.rcParams['svg.fonttype'] = 'none'
+# plt.rcParams["svg.fonttype"] = "none"
 # plt.rcParams["mathtext.fontset"] = "cm"
 
-# plt.rcParams['mathtext.fontset'] = 'stix'
-# print(plt.rcParams['datapath'])
+# plt.rcParams["mathtext.fontset"] = "stix"
+# print(plt.rcParams["datapath"])
 # #
 # import matplotlib
+
 # matplotlib.font_manager._rebuild()
 # for f in matplotlib.font_manager.fontManager.ttflist:
 #     print(f.name)
 
 
-# plt.rcParams['font.family'] = 'Helvetica'
-# plt.rcParams['font.sans-serif'] = 'Helvetica'
-# plt.rcParams['mathtext.fontset'] = 'custom'
-# plt.rcParams['mathtext.rm'] = 'Helvetica'
-# plt.rcParams['mathtext.it'] = 'Helvetica:italic'
-# plt.rcParams['mathtext.bf'] = 'Helvetica:bold'
-# plt.rcParams['mathtext.sf'] = 'Helvetica'
-# plt.rcParams["text.usetex"] =True
-# plt.rcParams['text.latex.unicode']=True
-# plt.rcParams['text.latex.preamble'] = [
-#        r'\usepackage{siunitx}',   # i need upright \micro symbols, but you need...
-#        r'\sisetup{detect-all}',   # ...this to force siunitx to actually use your fonts
-#        r'\usepackage{helvet}',    # set the normal font here
-#        r'\usepackage{sansmath}',  # load up the sansmath so that math -> helvet
-#        r'\sansmath'               # <- tricky! -- gotta actually tell tex to use!
+# plt.rcParams["font.family"] = "Times New Roman"
+# plt.rcParams["font.sans-serif"] = "Times New Roman"
+# plt.rcParams["mathtext.fontset"] = "custom"
+# plt.rcParams["mathtext.rm"] = "Helvetica"
+# plt.rcParams["mathtext.it"] = "Helvetica:italic"
+# plt.rcParams["mathtext.bf"] = "Helvetica:bold"
+# plt.rcParams["mathtext.sf"] = "Helvetica"
+# plt.rcParams["text.usetex"] = True
+# plt.rcParams["text.latex.unicode"] = True
+# plt.rcParams["text.latex.preamble"] = [
+#     r"\usepackage{siunitx}",  # i need upright \micro symbols, but you need...
+#     r"\sisetup{detect-all}",  # ...this to force siunitx to actually use your fonts
+#     r"\usepackage{helvet}",  # set the normal font here
+#     r"\usepackage{sansmath}",  # load up the sansmath so that math -> helvet
+#     r"\sansmath",  # <- tricky! -- gotta actually tell tex to use!
 # ]
 
 import sys
@@ -287,7 +288,7 @@ class Figure:
         self._title = title
         self._dpi = dpi
         self._pad = pad
-        self._font = font if font else {"font.size": 8}
+        self._font = font if font else {"font.size": 12}
         self._labels = labels
         self._size = size
         self._share = (sharex, sharey)
@@ -1551,7 +1552,6 @@ class Data:
                 else:
                     tp0.append(1)
             p0 = tp0
-
         # initialise the fixed variables
         if not fix:
             fix = []
@@ -1987,15 +1987,17 @@ class Dataset:
         if type(item) is np.ndarray:
             dct = {}
             for key in self._dct:
-                dct[key] = list(np.array(self._dct[key])[item])
-            dset = copy.deepcopy(self)
+                dct[key] = list(np.array(self._dct[key], dtype=object)[item])
+            dset = copy.deepcopy(
+                self
+            )  # if you make changes to self, dset completely behaves independetly
             dset._dct = dct
             return dset
 
         if type(item) is slice:
             dct = {}
             for key in self._dct:
-                dct[key] = list(np.array(self._dct[key])[item])
+                dct[key] = list(np.array(self._dct[key], dtype=object)[item])
             dset = copy.deepcopy(self)
             dset._dct = dct
             return dset
@@ -2004,7 +2006,6 @@ class Dataset:
             dct = {}
             for key in self._dct:
                 dct[key] = [self._dct[key][item]]
-
             dset = copy.deepcopy(self)
             dset._dct = dct
             return dset
@@ -2173,23 +2174,4 @@ class Dataset:
                 ]
         # run the global fit to all the data sets
         return return_dct if return_dict else out
-
-
-#%%
-# This below is for playing around
-# os.chdir(
-#     r"G:\2021\AG_LG06_6\mol gnr_dil1to100_1phenyloctane\AG_LG06_6_IVsVg\20210118"
-# )
-# d = QTLab_Dataset.find()
-# first_dataset = d[0]
-# print(type(first_dataset))
-# fig = Figure(aspect_ratio=1, dpi=150)
-
-#%%
-
-
-#%%
-
-
-#%%
 
