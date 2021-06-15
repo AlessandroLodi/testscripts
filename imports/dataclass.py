@@ -1581,8 +1581,8 @@ class Data:
                 "\tdef f(x," + ", ".join(param_list_fixed) + "):\n"
                 "\t\ty = fnc(x," + ", ".join(param_list) + ")\n"
                 # \t\tplt.ion()\n'
-                #'\t\tplt.close()\n'
-                #'\t\tplt.clear\n'
+                # '\t\tplt.close()\n'
+                # '\t\tplt.clear\n'
                 "\t\tl2.set_ydata(y)\n"
                 "\t\tplt.draw()\n"
                 "\t\tplt.pause(0.1)\n"
@@ -2174,4 +2174,3 @@ class Dataset:
                 ]
         # run the global fit to all the data sets
         return return_dct if return_dict else out
-

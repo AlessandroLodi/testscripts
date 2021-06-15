@@ -7,12 +7,12 @@ from imports.qtlab_data import *
 from imports.dataclass import *
 from helper_functions import *
 
-os.chdir(r"G:\Probestation\AG_LG20_4")
+os.chdir(r"H:\AG_TE_4_bottom")
 
 # configuration
-chip = "AG_LG20_4"
-eburn = "eburn"
-mol = "mol spinvalve"
+chip = "AG_TE_4_bottom"
+eburn = "post_eburn_check"
+mol = "gnr-aom_1"
 mol_name = "DyTb"
 gnr_name = "GNR_AOM"
 
@@ -37,7 +37,7 @@ for dev in devices:
             Subplot_IVsVg(
                 data,
                 # title=f"Dev {dev} Eburn, No {mol_name}",
-                title=f"After Burning, Before Dropcasting {mol_name}",
+                title=f"After Burning, Before Dropcasting {gnr_name}",
                 cmap="viridis",
                 crange=(-np.max(current_lst), np.max(current_lst)),
                 # range=(-4, 4),
@@ -53,23 +53,12 @@ for dev in devices:
         fig.add_subplot(
             Subplot_IVsVg(
                 data_molps,
-                title=f"Check After Dropcasting {mol_name}",
+                title=f"Check After Dropcasting {gnr_name}",
                 cmap="viridis",
                 crange=(-np.max(current_lst), np.max(current_lst)),
                 yrange=(-0.2, 0.2),
             )
         )
     fig.visualise(f"Figures_SD_comparison/{chip}/{dev}.png")
-
-
-#%%
-# Sandbox Cell **** Syntax Experimenting ****
-
-
-# exp_dir = ["eburn", "mol spinvalve"]
-
-# for burn, mol in zip(*exp_dir):
-#     data_eburn, device_eburn = get_dataset(burn)
-#     data_mol, device_mol = get_dataset(mol)
 
 # %%
