@@ -55,10 +55,45 @@ for dev in devices:
                     linewidth=0.8, color=to_rgba("C0", 0.6), label="raw data"
                 )
 
-                fig.add_subplot(
-                    Subplot_IVg(
-                        data,
-                        title="Gate Sweep, RT, Vsd = 0.2 V",
-                    )
-                )
+                fig.add_subplot(Subplot_IVg(data, title="Gate Sweep, RT, Vsd = 0.2 V",))
                 fig.visualise("Figures_gs_gooddev/{}/{}.png".format(chipPiece, dev))
+
+
+#%%
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import string
+from imports.qtlab_data import *
+from imports.dataclass import *
+from imports.physics_models import *
+from matplotlib.colors import to_rgba
+
+file_path = "gnr-aom-dil-1to100"
+match = "{}".format(file_path)
+pattern = ".*?(?P<folder>{}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)".format(
+    match
+)
+os.chdir(r"I:\gnr-aom-fet\AG_LG26_6")
+# find all QTLab files in the folder and sort them newer to the front
+dset = QTLab_Dataset.find(pattern=pattern)
+dset = dset[np.argsort(dset["timestamp"])[::-1]]
+
+print(dset)
+
+ivsvgset = dset[dset["type"] == "IV"]
+devices = np.unique(ivsvgset["device"])
+# %%
+for dev in devices:
+    dataset = ivsvgset[ivsvgset["device"] == dev]
+    fig = Figure(aspect_ratio=1.0, rows=1, font=None, dpi=150, size=2)
+    data = dataset.load(QTLab_Data)[0]
+    data_averaged = data.average_cycles().smooth(method="gaussian")
+    print(data_averaged)
+    data_averaged.plot_settings(
+        linewidth=0.8, color=to_rgba("C0", 0.6), label="averaged"
+    )
+
+    fig.add_subplot(Subplot_IV(data, title="Bias Trace, RT",))
+    fig.visualise(f"average_cycles_smooth_gauss_IV/{dev}.png")
+# %%

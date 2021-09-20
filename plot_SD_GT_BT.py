@@ -1,6 +1,6 @@
 #%%
 import os
-import numpy as numpy
+import numpy as np
 import matplotlib.pyplot as plt
 import string
 from imports.qtlab_data import *
@@ -18,13 +18,19 @@ returns:
     .png file
 """
 
-os.chdir(r"I:\2019\alessandrofet\stabdiag_GNR_1\GNR2_1\stabdiag_GNR_1_IVsVg")
+file_path = "gnr-aom-dil-1to100"
+match = "{}".format(file_path)
+pattern = ".*?(?P<folder>{}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)".format(
+    match
+)
+os.chdir(r"I:\gnr-aom-fet\AG_LG26_6\gnr-aom-dil-1to100\AG_LG26_6_IVsVg\20210613")
 dset = QTLab_Dataset.find()
 data = dset.load(Stability_Diagram)
-vg_max = 0.01
-vsd_max = 0.39
-vgds = [x for x in np.around(np.linspace(0, vg_max, 1), decimals=2)]
-vsds = [x for x in np.around(np.linspace(0, vsd_max, 1), decimals=2)]
+vg_max = 4
+vsd_max = 0.79
+num_points = 5
+vgds = [x for x in np.around(np.linspace(0, vg_max, num_points), decimals=2)]
+vsds = [x for x in np.around(np.linspace(0, vsd_max, num_points), decimals=2)]
 colors_vg = np.linspace(0.1, vg_max, num=len(vgds))
 colors_vsd = np.linspace(0.1, vsd_max, num=len(vsds))
 biastrace_dict = {}
@@ -32,7 +38,7 @@ gatetrace_dict = {}
 gatetrace_lst = []
 biastrace_lst = []
 
-for i in range(len(data[:2])):
+for i in range(len(data)):
     biastraces = []
     gatetraces = []
     for vg, color_vg, vsd, color_vsd in zip(vgds, colors_vg, vsds, colors_vsd):
@@ -57,9 +63,11 @@ for i in range(len(data[:2])):
         )
         gatetraces.append(gatetrace)
         gatetrace_lst.append(gatetrace)
-    gatetrace_dict.update({f"Vg_device_{dset['device'][i]}": gatetrace_lst[i]["Vg"][:]})
+    gatetrace_dict.update(
+        {f"Vg_device_{dset['device'][i]}": gatetrace_lst[i]["Isd"][:]}
+    )
     biastrace_dict.update(
-        {f"Vsd_device_{dset['device'][i]}": biastrace_lst[i]["Vsd"][:]}
+        {f"Vsd_device_{dset['device'][i]}": biastrace_lst[i]["Isd"][:]}
     )
     fig = Figure(aspect_ratio=1, dpi=150)
     fig.add_subplot(
@@ -67,7 +75,7 @@ for i in range(len(data[:2])):
     )
     fig.add_subplot(Subplot_IV(*biastraces, legend=True, title=f"{dset[i]['device']}"))
     fig.add_subplot(Subplot_IVg(*gatetraces, legend=True, title=f"{dset[i]['device']}"))
-    fig.visualise(f"figure_plot_SD_BT-GT_test/{dset[i]['device']}_{i}.svg")
+    fig.visualise(f"figure_plot_SD_BT-GT_test/{dset[i]['device']}_{i}.png")
 
 gt_df = pd.DataFrame(gatetrace_dict)
 bs_df = pd.DataFrame(biastrace_dict)
@@ -81,5 +89,7 @@ for i in range(len(data[:25])):
     fig.add_subplot(Subplot_IVsVg(data[i], cmap="viridis", yrange=(-0.2, 0.2),))
     fig.visualise(f"figure_justSD_svg/sd_device_{dset[i]['device']}.svg")
 
+
+# %%
 
 # %%

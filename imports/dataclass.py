@@ -620,7 +620,7 @@ class Figure:
         fig = plt.figure(
             name,
             figsize=(
-                3.3
+                4.2  # was 3.3
                 * self._aspect_ratio
                 * self._size
                 * int((len(self._subplots)) / self._rows),

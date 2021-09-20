@@ -500,7 +500,6 @@ class Stability_Diagram(QTLab_Data):
             w = np.where(
                 dat[kwargs.get("Vg", "Vg")] < np.roll(dat[kwargs.get("Vg", "Vg")], 1)
             )[0]
-            print(f"big cock {dat[kwargs.get('Vg', 'Isd')]}")
             print(f"########### {kwargs}")
             c = 0
             n = []
