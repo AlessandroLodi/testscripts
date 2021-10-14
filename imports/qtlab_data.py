@@ -469,7 +469,7 @@ class QTLab_Data(Cyclic_Data):
                 if not dat:
                     print(">> Warning: no data found for {}".format(filename))
             elif filename.split(".")[-1] in ("mat"):
-                print(">>>>> Loading {}".format(filename))
+                print(f">>> Loading {filename}")
                 # set the axes (which might have been read from the file)
                 axes = kwargs.get("axes", ("x", "y"))
                 ps["axes"] = axes
@@ -500,7 +500,6 @@ class Stability_Diagram(QTLab_Data):
             w = np.where(
                 dat[kwargs.get("Vg", "Vg")] < np.roll(dat[kwargs.get("Vg", "Vg")], 1)
             )[0]
-            print(f"########### {kwargs}")
             c = 0
             n = []
             l = len(n)
