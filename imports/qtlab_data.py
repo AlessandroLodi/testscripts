@@ -736,7 +736,6 @@ class Stability_Diagram(QTLab_Data):
         dat = self._data
         Isd = dat["Isd"]
         Vg = dat["Vg"]
-        print("**************")
         if not func:
             func = lambda Isd, Vg: np.gradient(np.log10(Isd)) / (Vg[1] - Vg[0])
 
@@ -798,7 +797,6 @@ class Stability_Diagram(QTLab_Data):
         fit.ps(linewidth=1, color="k")
         self._gatetrace.ps(marker="o")
         self._gatetrace_fit = fit
-
         try:
             self.ps(Vc=params["Vc"])
             self.ps(alpha_gate=params["alpha"])

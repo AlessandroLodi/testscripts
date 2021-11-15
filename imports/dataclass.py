@@ -341,7 +341,7 @@ class Figure:
         return "", 1
 
     def plot_subplot(self, subplot):
-        # plt.rcParams["font.family"] = subplot['font']
+        plt.rcParams["font.family"] = subplot["font"]
         plt.sca(subplot["ax"])
         subplot["ax"].cla()
         if subplot["type"] == "image":
@@ -391,9 +391,9 @@ class Figure:
                 if dataset:
                     dataset.plot_color(**subplot.settings("crange", "cmap", "calpha"))
                 if subplot["cbar"] != "None":
-                    # divider = make_axes_locatable(subplot['ax'])
-                    # cax1 = divider.append_axes("right", size="10%", pad=0.05)
-                    # subplot['cbar'] = plt.colorbar(format='%.2g', cax=cax1)
+                    divider = make_axes_locatable(subplot["ax"])
+                    cax1 = divider.append_axes("right", size="10%", pad=0.05)
+                    subplot["cbar"] = plt.colorbar(format="%.2g", cax=cax1)
                     subplot["cbar"] = plt.colorbar(shrink=0.9)
                     subplot["cbar"].set_label(subplot["axis_labels"][2])
         if subplot["type"] == "3d":
@@ -1542,6 +1542,7 @@ class Data:
         # get the parameter list from the function. It is important that the function has a signature. C functions will
         # not work and require a lambda wrap: lambda x,a,b: cfunc(x,a,b)
         param_list = list(signature(func).parameters)[1:]
+        print(f">>> param_list = {param_list}")
         return_keys = param_list.copy()
         # transfer p0 from a dict to an array
         if type(p0) is dict:
@@ -1550,7 +1551,9 @@ class Data:
                 if p0 and key in p0:
                     tp0.append(p0[key])
                 else:
-                    tp0.append(1)
+                    pass
+                    # print("execute the stupid append(1)")
+                    # tp0.append(1)
             p0 = tp0
         # initialise the fixed variables
         if not fix:
@@ -1626,6 +1629,8 @@ class Data:
             if ignore_error:
                 try:
                     if bounds:
+                        print(f"P0 given in the fit {p0}")
+                        print(f"Bounds given in the fit {bounds}")
                         params, _ = curve_fit(
                             fitfunc, xdata, ydata, bounds=bounds, p0=p0
                         )

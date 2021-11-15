@@ -1,10 +1,21 @@
+#%%
+import os
+import numpy as np
 from imports.qtlab_data import *
 from imports.dataclass import *
-from imports.physics_models import *
-import os
+from matplotlib.colors import to_rgba
+
+try:
+    from imports.simmons import simmons
+except:
+    from imports.physics_models_p import *
+
+    simmons = physics_models.simmons
+    # subfolders and pattern matching on the files
+from matplotlib.colors import LinearSegmentedColormap
 
 data_dir = r"C:\\Users\\oums1095\\Nexus365\\Simen Sopp - OxNanoSpin Team Folder\\Transport\\Ale01_r31\\5.Temperature_Dataset\copy_justSD_Aug"
-fig_dir = r"C:\\Users\\oums1095\\projects\\gnr_set"
+fig_dir = r"C:\\Users\\oums1095\\projects\\gnr_set\\figures"
 os.chdir(data_dir)
 dset = (
     QTLab_Dataset.find()
@@ -12,7 +23,7 @@ dset = (
 print(
     dset
 )  # this shows how the load method splits the filename up to make a list of dictionaries.
-data = dset[0].load(
+data = dset[-3].load(
     Stability_Diagram, axes=("Vg", "T", "Vsd", "Isd", "t")
 )  # the methods Bart and me wrote for stability diagrams assume that the axes are labelled in this way (not Vsd_mV, and Vg_V, etc.. as they are in the text file)
 dataSD = data[0]  # the SD is a pandas dataframe that is the first item
@@ -38,9 +49,7 @@ fig = Figure()  # make a figure object, you can define things like aspect ratio 
 fig.add_subplot(Subplot_IVsVg(dataSD))  # plot the SD
 fig.add_subplot(Subplot_GVsVg(dataSD))  # plot the conductance SD
 fig.add_subplot(Subplot_GVg(gatetrace))  # plot the conductance gate trace
-fig.visualise(
-    fig_dir + "/test_figures_ipython"
-)  # see the plot - enter a file name as a string to export it e.g. 'test.pdf'
+fig.visualise()  # see the plot - enter a file name as a string to export it e.g. 'test.pdf'
 #####
 # raise SystemExit  # Ale  - you can comment out this line if you want to see a fit to your data below
 ####
@@ -55,11 +64,10 @@ vcs = [
 ]  # a list I made of approximate peak positions using manual_fit_vc stability diagram method
 alpha = 0.023  # starting value for alpha as 23 meV/V as you have already told me
 gatetraceFits = []  # an empty list to add the gate trace fits to in the for loop
-# dataSD.manual_fit_Vc()
-# vc = dataSD.ps("Vc")["Vc"]
-# print(f"######\n Value for vc\n{vc}\n######")
-# raise SystemExit
+
 for vc in vcs:  # loop over the peaks values
+    print(f">>> start fitting peak {vc}")
+    print(">>> making copy of SD")
     dat2 = dataSD.copy()  # make a new copy of the data for each iteration
     setdct = {"Vc": vc, "T": T}  # make a dictionary with vc and T
     dat2.ps(
@@ -74,16 +82,18 @@ for vc in vcs:  # loop over the peaks values
     ]  # this is a bit hard to read but it tells us the Gsd at the voltage: vc. We will take this as the initial guess for Gmax for the fitting
     print("Max Gsd in this window: {:.3e} S".format(gMaxTemp))  # print the Gmax
     p0 = {
+        "T": T,
         "Vc": vc,
         "Gmax": gMaxTemp,
         "alpha": alpha,
     }  # set the initial values as a dictionary
+    print(f">>> P0 in the script = {p0}")
     bounds = [
-        (vc - 1, 0.5, 0.85 * alpha),
-        (vc + 1, 1.5, 1.15 * alpha),
+        (T - 0.5, vc - 1, 0.3, 0.85 * alpha),
+        (T + 0.5, vc + 1, 0.75, 1.15 * alpha),
     ]  # set bounds for the fitting parameters for vc, gmax and alpha. They can be a bit abitrary to find what works. The Gmax is normalized to equal 1 in the function so the bounds are 0.5*Gmax to 1.5 Gmax really
     params, r = dat2.fit_coulomb_peak(
-        p0=p0, bounds=bounds
+        bounds=bounds, p0=p0,
     )  # this is the function that fits the data - find the method in qtlab_data and the function in physics_models
     print(
         "Final parameters for peak: alpha_gate = {:.3f} meV/V, Gmax = {:.3e} S, Peak position: {:.3f} Vg".format(
@@ -101,6 +111,7 @@ for vc in vcs:  # loop over the peaks values
         gatetraceFits.append(gatetraceFit)  # add the fitted gate trace to the list
     except:
         pass
+    print(">>> End Fit Loop")
 
 
 gatetraceFitSum = gatetrace.copy()  # make another copy of the gate trace to play with
@@ -120,5 +131,18 @@ fig = Figure()  # make a figure
 fig.add_subplot(
     Subplot_GVg(gatetrace, *gatetraceFits, gatetraceFitSum, legend=True)
 )  # plot the experimental gate traces, and the list of fits all together
-fig.visualise()  # visualise, or save
+fig.visualise(fig_dir + f"/fit_gatetrace_python_{int(T)}_K")  # visualise, or save
 
+#%%
+# Function to write fitting parameters in an excel table
+transition_name = ["transition_" + str(i) for i in range(len(gatetraceFits))]
+data_gsd = {}
+for i, _ in enumerate(gatetraceFits):
+    data_gsd[transition_name[i]] = gatetraceFits[i]["Gsd"].values.transpose()
+df_gsd = pd.DataFrame(data_gsd)
+# initialise writer and export to excel sheet
+# change directory
+df_gsd.to_csv(path_or_buf=fig_dir + f"/zbgt_{int(T)}K.csv", sep=",", index=False)
+# writer.save()
+
+# %%

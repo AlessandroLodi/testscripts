@@ -43,8 +43,10 @@ T = np.mean(dataSD["T"].values)
 print(f"Stability Diagram measured at {T:.2} K")
 # %%
 # It takes a lot, use it wisely
-for i, _ in enumerate(dset):
-    data = dset[i].load(Stability_Diagram, axes=("Vg", "T", "Vsd", "Isd", "t"))
+for i, _ in enumerate(dset_temp_sorted):
+    data = dset_temp_sorted[i].load(
+        Stability_Diagram, axes=("Vg", "T", "Vsd", "Isd", "t")
+    )
     dataSD = data[0]
     dataSD["Vsd"] = 1e-3 * dataSD["Vsd"].values
     dataSD.correct_offset()
@@ -55,10 +57,16 @@ for i, _ in enumerate(dset):
         Figure()
     )  # make a figure object, you can define things like aspect ratio and size
     fig.add_subplot(
-        Subplot_IVsVg(dataSD, title=f"{dset[i]['filename']}", cmap="viridis")
+        Subplot_IVsVg(
+            dataSD, title=f"{dset_temp_sorted[i]['filename']}", cmap="viridis"
+        )
     )  # plot the SD
     fig.add_subplot(
-        Subplot_GVsVg(dataSD, title=f"{dset[i]['filename']}", cmap="viridis")
+        Subplot_GVsVg(
+            dataSD, title=f"{dset_temp_sorted[i]['filename']}", cmap="viridis"
+        )
     )  # plot the conductance SD
     fig.add_subplot(Subplot_GVg(gatetrace))  # plot the conductance gate trace
-    fig.visualise(f"figures/{dset[i]['filename']}.png")
+    fig.visualise(f"figures/{dset_temp_sorted[i]['filename']}_{str(T_list[i])}.png")
+
+# %%
