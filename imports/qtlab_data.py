@@ -140,8 +140,10 @@ class Subplot_FitAlpha(Subplot_GVsVg):
             vc = ps["Vc"]
             subplot["ax"].plot(vc, 0, "x", color="black")
             if "alpha_gate" in ps and "alpha_source" in ps:
-                Vs = np.array([np.min(dat["Vsd"].values), np.max(dat["Vsd"].values)])
-                Vg_s = (Vs * (1.0 - ps["alpha_source"]) / ps["alpha_gate"]) + vc
+                Vs = np.array([np.min(dat["Vsd"].values),
+                              np.max(dat["Vsd"].values)])
+                Vg_s = (Vs * (1.0 - ps["alpha_source"]
+                              ) / ps["alpha_gate"]) + vc
                 Vg_d = (-Vs * ps["alpha_source"] / ps["alpha_gate"]) + vc
                 (self._drainline,) = subplot["ax"].plot(Vg_d, Vs)
                 (self._sourceline,) = subplot["ax"].plot(Vg_s, Vs)
@@ -228,7 +230,8 @@ class Subplot_FitVc(Subplot_GVsVg):
             try:
                 self.vcline.set_data(event.xdata, 0)
             except:
-                (self.vcline,) = subplot["ax"].plot(event.xdata, 0, "x", color="black")
+                (self.vcline,) = subplot["ax"].plot(
+                    event.xdata, 0, "x", color="black")
             dat.ps(Vc=event.xdata)
 
         kwargs["onclick"] = kwargs.get("onclick", onclick)
@@ -292,7 +295,8 @@ class Subplot_ExcitedStateSpectrum(Subplot):
                 )
                 for peak in peaks[0]:
                     if peak[0] < 0.03:
-                        subplot["ax"].plot(peak[0], peak[1], "x", color="black")
+                        subplot["ax"].plot(
+                            peak[0], peak[1], "x", color="black")
                         subplot["ax"].text(
                             peak[0],
                             peak[1] * 1.05,
@@ -372,13 +376,15 @@ class QTLab_Data(Cyclic_Data):
                             ln = f.readline()
                             if i == 2:
                                 ps["timestamp"] = calendar.timegm(
-                                    time.strptime(ln[17:37], "%b %d %H:%M:%S %Y")
+                                    time.strptime(
+                                        ln[17:37], "%b %d %H:%M:%S %Y")
                                 )
                             if len(ln) > 0 and (ln[0] == "#" or ln[0] == "\n"):
                                 header += ln
                             else:
                                 break
-                    axes = re.findall("# Column \d+:[\s\S]+?name: (.+)\n", header)
+                    axes = re.findall(
+                        "# Column \d+:[\s\S]+?name: (.+)\n", header)
                     comments = re.findall(
                         "# ([a-zA-Z0-9_]+): ([a-zA-Z0-9_\.]+)\n", header
                     )
@@ -498,7 +504,8 @@ class Stability_Diagram(QTLab_Data):
         super().__init__(dat, **kwargs)
         if "n" not in dat:
             w = np.where(
-                dat[kwargs.get("Vg", "Vg")] < np.roll(dat[kwargs.get("Vg", "Vg")], 1)
+                dat[kwargs.get("Vg", "Vg")] < np.roll(
+                    dat[kwargs.get("Vg", "Vg")], 1)
             )[0]
             c = 0
             n = []
@@ -512,7 +519,8 @@ class Stability_Diagram(QTLab_Data):
                 c += 1
             try:
                 l = len(n)
-                n = np.hstack((n, np.ones(len(dat[kwargs.get("Vg", "Vg")]) - l) * c))
+                n = np.hstack(
+                    (n, np.ones(len(dat[kwargs.get("Vg", "Vg")]) - l) * c))
             except:
                 n = np.ones(len(dat[kwargs.get("Vg", "Vg")])) * c
             dat["n"] = np.array(n)
@@ -536,11 +544,14 @@ class Stability_Diagram(QTLab_Data):
 
     def correct_offset(self, zero=0.1):
         vgs = np.unique(self._data["Vg"])
+        i = 0
         for vg in vgs:
+            print(f'iteration number {i}', end='\r')
             d = self[self["Vg"] == vg]
             imean = np.mean(d[np.abs(d["Vsd"].values) < zero]["Isd"].values)
             d["Isd"] -= imean
             self[self["Vg"].values == vg] = d._data
+            i += 1
 
     def correct_offset_vsd(self, zero=0.01):
         vgs = np.unique(self._data["Vg"])
@@ -572,7 +583,8 @@ class Stability_Diagram(QTLab_Data):
         ddat = ddat[(ddat["Vsd"].values == vsd)]
         vg = ddat["Vg"].values
         # get the unique Vg values, and the inverse array which contains indices for the Vsd elements
-        un, inverse, weigths = np.unique(vg, return_inverse=True, return_counts=True)
+        un, inverse, weigths = np.unique(
+            vg, return_inverse=True, return_counts=True)
         # create the multiplication matrix
         matrix = np.zeros((len(un), len(vg)))
         matrix[inverse, np.arange(len(vg))] = 1
@@ -580,7 +592,8 @@ class Stability_Diagram(QTLab_Data):
         for k in ddat._data:
             print(k)
             ddat._data[k] = (
-                matrix.dot(np.reshape(ddat[k].values, (-1, 1))).T.flatten() / weigths
+                matrix.dot(np.reshape(
+                    ddat[k].values, (-1, 1))).T.flatten() / weigths
             )
         del ddat._data["Vsd"]  # remove averaged column
         ddat.axes = ("Vg", "Isd")
@@ -618,7 +631,8 @@ class Stability_Diagram(QTLab_Data):
         ddat = ddat[(ddat["Vsd"].values == vsd)]
         vg = ddat["Vg"].values
         # get the unique Vg values, and the inverse array which contains indices for the Vsd elements
-        un, inverse, weigths = np.unique(vg, return_inverse=True, return_counts=True)
+        un, inverse, weigths = np.unique(
+            vg, return_inverse=True, return_counts=True)
         # create the multiplication matrix
         print(f"un = {un}\n vg= {vg}\n")
         matrix = np.zeros((len(un), len(vg)))
@@ -629,7 +643,8 @@ class Stability_Diagram(QTLab_Data):
                 # shift Vg so when you take the log it won't cause problem
                 ddat._data[k] += x_shift
             ddat._data[k] = (
-                matrix.dot(np.reshape(ddat[k].values, (-1, 1))).T.flatten() / weigths
+                matrix.dot(np.reshape(
+                    ddat[k].values, (-1, 1))).T.flatten() / weigths
             )
             ddat._data[k] = np.log10(ddat._data[k])
 
@@ -662,7 +677,8 @@ class Stability_Diagram(QTLab_Data):
         ddat = ddat[(ddat["Vg"].values == vg)]
         vsd = ddat["Vsd"].values
 
-        un, inverse, weights = np.unique(vsd, return_inverse=True, return_counts=True)
+        un, inverse, weights = np.unique(
+            vsd, return_inverse=True, return_counts=True)
         matrix = np.zeros((len(un), len(vsd)))
         print(matrix)
         matrix[inverse, np.arange(len(vsd))] = 1
@@ -670,7 +686,8 @@ class Stability_Diagram(QTLab_Data):
         for k in ddat._data:
             print(f"this is the key: {k}")
             ddat._data[k] = (
-                matrix.dot(np.reshape(ddat[k].values, (-1, 1))).T.flatten() / weights
+                matrix.dot(np.reshape(
+                    ddat[k].values, (-1, 1))).T.flatten() / weights
             )
 
         del ddat._data["Vg"]
@@ -693,14 +710,16 @@ class Stability_Diagram(QTLab_Data):
             # average Vsd values for each Vg {
             x = dat["Vsd"].values
             # get the unique Vg values, and the inverse array which contains indices for the Vsd elements
-            un, inverse, weights = np.unique(x, return_inverse=True, return_counts=True)
+            un, inverse, weights = np.unique(
+                x, return_inverse=True, return_counts=True)
             # create the multiplication matrix (matrix dot x / weights will give un)
             matrix = np.zeros((len(un), len(x)))
             matrix[inverse, np.arange(len(x))] = 1
             # perform the dot product for all keys
             for key in dat._data:
                 dat._data[key] = (
-                    matrix.dot(np.reshape(dat[key].values, (-1, 1))).T.flatten()
+                    matrix.dot(np.reshape(
+                        dat[key].values, (-1, 1))).T.flatten()
                     / weights
                 )
         self._resonant_trace = dat
@@ -715,14 +734,16 @@ class Stability_Diagram(QTLab_Data):
         # average Vsd values for each Vg {
         x = ddat["Vg"].values
         # get the unique Vg values, and the inverse array which contains indices for the Vsd elements
-        un, inverse, weights = np.unique(x, return_inverse=True, return_counts=True)
+        un, inverse, weights = np.unique(
+            x, return_inverse=True, return_counts=True)
         # create the multiplication matrix (matrix dot x / weights will give un)
         matrix = np.zeros((len(un), len(x)))
         matrix[inverse, np.arange(len(x))] = 1
         # perform the dot product for all keys
         for key in ddat._data:
             ddat._data[key] = (
-                matrix.dot(np.reshape(ddat[key].values, (-1, 1))).T.flatten() / weights
+                matrix.dot(np.reshape(
+                    ddat[key].values, (-1, 1))).T.flatten() / weights
             )
         # }
         del ddat._data["Vsd"]  # remove the averaged column
@@ -737,7 +758,8 @@ class Stability_Diagram(QTLab_Data):
         Isd = dat["Isd"]
         Vg = dat["Vg"]
         if not func:
-            func = lambda Isd, Vg: np.gradient(np.log10(Isd)) / (Vg[1] - Vg[0])
+            def func(Isd, Vg): return np.gradient(
+                np.log10(Isd)) / (Vg[1] - Vg[0])
 
         if not p0:
             p0 = {}
@@ -761,7 +783,7 @@ class Stability_Diagram(QTLab_Data):
         except:
             dat = self.zero_bias_gate_trace()
         if not func:
-            func = lambda Vg, T, Vc, Gmax, alpha: physics_models.thermal_broadening(
+            def func(Vg, T, Vc, Gmax, alpha): return physics_models.thermal_broadening(
                 Vg, self.ps("T")["T"], Vc, Gmax, alpha
             )
 
@@ -817,7 +839,8 @@ class Stability_Diagram(QTLab_Data):
             1 / (1 + np.exp(-(dat["Isd"].values + window) / steepness)) - 1
         )
         self._confined = dat
-        sd = lambda data, Vc, alpha_gate, alpha_source: physics_models.stabdiag(
+
+        def sd(data, Vc, alpha_gate, alpha_source): return physics_models.stabdiag(
             data, 1, Vc, alpha_gate, alpha_source, T
         )
         alpha = self.ps("alpha_gate")["alpha_gate"]
@@ -834,7 +857,8 @@ class Stability_Diagram(QTLab_Data):
         )
         if side != "both":
             fit = dat.copy()
-            fit["Isd"] = np.array(sd((fit["Vg"].values, fit["Vsd"].values), *params))
+            fit["Isd"] = np.array(
+                sd((fit["Vg"].values, fit["Vsd"].values), *params))
         self.ps(Vc=params[0], alpha_gate=params[1], alpha_source=params[2])
         self._confined_fit = fit
         return params, r2
@@ -867,7 +891,8 @@ class Stability_Diagram(QTLab_Data):
             1 + np.exp(-(dat["Isd"].values / vsd - window) / steepness)
         ) + (1 / (1 + np.exp(-(dat["Isd"].values / vsd + window) / steepness)) - 1)
         self._confined = dat
-        sd = lambda data, Vc, alpha_gate, alpha_source, alpha_J, J: physics_models.curved_stabdiag(
+
+        def sd(data, Vc, alpha_gate, alpha_source, alpha_J, J): return physics_models.curved_stabdiag(
             data, 1, Vc, alpha_gate, alpha_source, alpha_J, T, J
         )
         alpha = self.ps("alpha_gate")["alpha_gate"]
@@ -883,14 +908,17 @@ class Stability_Diagram(QTLab_Data):
                 ignore_error=False,
             )
         else:
-            params, r2, fit = dat.fit(sd, p0=p0, bounds=bounds, ignore_error=False,)
+            params, r2, fit = dat.fit(
+                sd, p0=p0, bounds=bounds, ignore_error=False,)
         # params = [vc, alpha, 0.8, 0.1]
         # fit=dat.copy()
         print("Fitting data with R^2 = {:.3g}".format(r2))
         if side != "both":
             fit = dat.copy()
-            fit["Isd"] = np.array(sd((fit["Vg"].values, fit["Vsd"].values), *params))
-        self.ps(Vc=params[0], alpha_gate=params[1], alpha_source=params[2], J=params[3])
+            fit["Isd"] = np.array(
+                sd((fit["Vg"].values, fit["Vsd"].values), *params))
+        self.ps(Vc=params[0], alpha_gate=params[1],
+                alpha_source=params[2], J=params[3])
         self._confined_fit = fit
         return params, r2, fit
 
@@ -914,7 +942,8 @@ class Stability_Diagram(QTLab_Data):
         if direction == "source":
             Vg2 = Vg1 - (Vs2 - Vs1) * ps["alpha_source"] / ps["alpha_gate"]
         else:
-            Vg2 = Vg1 + (Vs2 - Vs1) * (1 - ps["alpha_source"]) / ps["alpha_gate"]
+            Vg2 = Vg1 + (Vs2 - Vs1) * \
+                (1 - ps["alpha_source"]) / ps["alpha_gate"]
         Vg1 += ps["Vc"]
         Vg2 += ps["Vc"]
         Vs = []
@@ -1061,8 +1090,10 @@ class QTLab_Dataset(Dataset):
                     else:
                         break
 
-            info["axes"] = re.findall("# Column \d+:[\s\S]+?name: (.+)\n", header)
-            comments = re.findall("# ([a-zA-Z0-9_]+): ([a-zA-Z0-9_\.]+)\n", header)
+            info["axes"] = re.findall(
+                "# Column \d+:[\s\S]+?name: (.+)\n", header)
+            comments = re.findall(
+                "# ([a-zA-Z0-9_]+): ([a-zA-Z0-9_\.]+)\n", header)
             for comment in comments:
                 try:
                     info[comment[0]] = float(comment[1])

@@ -206,7 +206,7 @@ class Subplot:
         "invert_xaxis": False,
         "background": "white",
         "legend_border": False,
-        "font": "Arial",
+        "font": "Computer Modern Roman",
         "title": "",
         "yticks": 0,
         "xticks": 0,
@@ -316,7 +316,6 @@ class Figure:
             decades = [1e15, 1e12, 1e-9, 1e6, 1e3, 1, 1e-3, 1e-6, 1e-9, 1e-12]
 
         scale = 1
-        # print('before: dec: {}, lim: {}'.format(dec,lim))
         while lim > 100:
             lim /= 1e3
             scale *= 1e3
@@ -358,12 +357,14 @@ class Figure:
             handles = []
             for i, dataset in enumerate(subplot.datasets):
                 if dataset:
-                    dataset.plot_2d(handles, index=i, **subplot.settings("cmap"))
+                    dataset.plot_2d(handles, index=i, **
+                                    subplot.settings("cmap"))
             if subplot["legend"] == True:
                 tdct = subplot.settings("legend_loc")
                 if "legend_loc" in tdct:
                     tdct = {"loc": tdct["legend_loc"]}
-                plt.legend(handles=handles, frameon=subplot["legend_border"], **tdct)
+                plt.legend(handles=handles,
+                           frameon=subplot["legend_border"], **tdct)
         if subplot["type"] == "scatter":
             handles = []
             for i, dataset in enumerate(subplot.datasets):
@@ -389,11 +390,12 @@ class Figure:
                 if subplot["cbar"] and subplot["cbar"] != "None":
                     subplot["cbar"].remove()
                 if dataset:
-                    dataset.plot_color(**subplot.settings("crange", "cmap", "calpha"))
+                    dataset.plot_color(
+                        **subplot.settings("crange", "cmap", "calpha"))
                 if subplot["cbar"] != "None":
-                    divider = make_axes_locatable(subplot["ax"])
-                    cax1 = divider.append_axes("right", size="10%", pad=0.05)
-                    subplot["cbar"] = plt.colorbar(format="%.2g", cax=cax1)
+                    # divider = make_axes_locatable(subplot["ax"])
+                    # cax1 = divider.append_axes("right", size="10%", pad=0.05)
+                    # subplot["cbar"] = plt.colorbar(format="%.2g", cax=cax1)
                     subplot["cbar"] = plt.colorbar(shrink=0.9)
                     subplot["cbar"].set_label(subplot["axis_labels"][2])
         if subplot["type"] == "3d":
@@ -504,8 +506,14 @@ class Figure:
             pf_z, scale_z = self._get_axis_metric_prefix(
                 subplot.settings().get("scale_factor_z", 1),
                 np.max(np.abs(subplot["cbar"].get_clim())),
-                reverse="{metric_prefix_reverse}" in subplot["axis_labels"][2],
+                reverse="{metric_prefix_reverse}" in subplot["axis_labels"][2]
             )
+
+            # pf_z, scale_z = self._get_axis_metric_prefix(subplot.settings().get('scale_factor_z', 1),
+            #                                              np.max(
+            #                                                  np.abs(ScalarMappable.get_clim(subplot['cbar']))),
+            #                                              reverse="{metric_prefix_reverse}" in subplot["axis_label"][2])
+
             # pf_z, scale_z = self._get_axis_metric_prefix(
             #     subplot.settings().get("scale_factor_z", 1),
             #     np.max(subplot["cbar"]),
@@ -529,10 +537,11 @@ class Figure:
                 )
             except:
                 ticks /= scale_z
-            ticklabels = np.array(["${0:g}$".format(s) for s in ticks], dtype=str)
+            ticklabels = np.array(["${0:g}$".format(s)
+                                  for s in ticks], dtype=str)
             # set the in between values to 0 (we don't generally need to see em)
-            ticklabels[1 : (len(ticklabels) // 2)] = " "
-            ticklabels[(len(ticklabels) // 2 + 1) : -1] = " "
+            ticklabels[1: (len(ticklabels) // 2)] = " "
+            ticklabels[(len(ticklabels) // 2 + 1): -1] = " "
             subplot["cbar"].ax.set_yticklabels(ticklabels)
             subplot["cbar"].set_label(
                 subplot["axis_labels"][2]
@@ -571,7 +580,8 @@ class Figure:
         except:
             xy = pc.get_offsets()
         # xy = line.get_data()
-        distances = np.hypot(mx - xy[event.ind][:, 0], my - xy[event.ind][:, 1])
+        distances = np.hypot(
+            mx - xy[event.ind][:, 0], my - xy[event.ind][:, 1])
         indmin = distances.argmin()
         dataind = event.ind[indmin]
 
@@ -584,7 +594,8 @@ class Figure:
             if self._ctrl:
                 d = subplot["highlighter"].get_data()
                 subplot["highlighter"].set_data(
-                    np.append(d[0], xy[dataind][0]), np.append(d[1], xy[dataind][1])
+                    np.append(d[0], xy[dataind][0]), np.append(
+                        d[1], xy[dataind][1])
                 )
             else:
                 subplot["highlighter"].set_data(xy[dataind][0], xy[dataind][1])
@@ -606,7 +617,7 @@ class Figure:
         position=None,
         name="Figure",
         change_func=None,
-        tight=True,
+        tight=False,
         labels=[],
         show=True,
     ):
@@ -654,7 +665,8 @@ class Figure:
                 subplots[i, j] = subplot["ax"]
             else:
                 subplot["ax"] = fig.add_subplot(
-                    self._rows, int((len(self._subplots)) / self._rows), index + 1
+                    self._rows, int((len(self._subplots)) /
+                                    self._rows), index + 1
                 )
                 subplots[i, j] = subplot["ax"]
                 if subplot["twin"]:
@@ -1235,13 +1247,15 @@ class Data:
 
     def plot_hist2d(self, bins=50, cmap="gnuplot"):
         return plt.hist2d(
-            self[self.axes[0]].values, self[self.axes[1]].values, bins=bins, cmap=cmap
+            self[self.axes[0]].values, self[self.axes[1]
+                                            ].values, bins=bins, cmap=cmap
         )
 
     def plot_hist(self, bins=50, axis=-1, index=0, **kwargs):
         ps = self.ps()
         # lbl = ps.get('label', '{name}').format(name=self.name, index=index)
-        lbl = ps.get("label", "{name}").format(name=ps.get("name", ""), index=index)
+        lbl = ps.get("label", "{name}").format(
+            name=ps.get("name", ""), index=index)
         c = ps.get("color")
         if not (type(c) is str or type(c) is np.str_ or type(c) is tuple):
             try:
@@ -1315,7 +1329,8 @@ class Data:
 
     def _reshape(self, newshape, order="C"):
         for key in self._data:
-            self._data[key] = np.reshape(self._data[key], newshape, order=order)
+            self._data[key] = np.reshape(
+                self._data[key], newshape, order=order)
         return self
 
     @staticmethod
@@ -1393,7 +1408,8 @@ class Data:
             y, x = np.meshgrid(space[self.axes[1]], space[self.axes[0]])
 
             data_locations = np.vstack(
-                (self._data[self.axes[0]].ravel(), self._data[self.axes[1]].ravel())
+                (self._data[self.axes[0]].ravel(),
+                 self._data[self.axes[1]].ravel())
             ).T
             grid_locations = np.vstack((x.ravel(), y.ravel())).T
             grid_data = scipy.interpolate.griddata(
@@ -1412,9 +1428,11 @@ class Data:
         else:
             size = args[0]
             x = np.linspace(
-                np.min(self._data[self.axes[0]]), np.max(self._data[self.axes[0]]), size
+                np.min(self._data[self.axes[0]]), np.max(
+                    self._data[self.axes[0]]), size
             )
-            y = np.interp(x, self._data[self.axes[0]], self._data[self.axes[1]])
+            y = np.interp(x, self._data[self.axes[0]],
+                          self._data[self.axes[1]])
             dct = {
                 self.axes[0]: x,
                 self.axes[1]: y,
@@ -1456,7 +1474,8 @@ class Data:
                             )
                         )
                     except:
-                        d = np.array(list(map(lambda x: savgol_filter(x, 9, 3), d)))
+                        d = np.array(
+                            list(map(lambda x: savgol_filter(x, 9, 3), d)))
                 else:
                     try:
                         d = savgol_filter(d, int(m.group(2)), int(m.group(3)))
@@ -1485,6 +1504,7 @@ class Data:
                 axis = 0
             dct = {}
             for key in self._data:
+                print(self._data.keys())
                 if method == "gradient":
                     dct[key] = np.gradient(self._data[key], axis=axis) / dx
                 elif "savgol" in method:
@@ -1634,10 +1654,12 @@ class Data:
                         params, _ = curve_fit(
                             fitfunc, xdata, ydata, bounds=bounds, p0=p0
                         )
-                        r2 = np.corrcoef(ydata, fitfunc(xdata, *params))[0][1] ** 2
+                        r2 = np.corrcoef(ydata, fitfunc(
+                            xdata, *params))[0][1] ** 2
                     else:
                         params, _ = curve_fit(fitfunc, xdata, ydata, p0=p0)
-                        r2 = np.corrcoef(ydata, fitfunc(xdata, *params))[0][1] ** 2
+                        r2 = np.corrcoef(ydata, fitfunc(
+                            xdata, *params))[0][1] ** 2
                 except RuntimeError:
                     params = np.zeros(len(p0))
                     r2 = 0.0
@@ -1646,7 +1668,8 @@ class Data:
                     r2 = 0.0
             else:
                 if bounds:
-                    params, _ = curve_fit(fitfunc, xdata, ydata, bounds=bounds, p0=p0)
+                    params, _ = curve_fit(
+                        fitfunc, xdata, ydata, bounds=bounds, p0=p0)
                     r2 = np.corrcoef(ydata, fitfunc(xdata, *params))[0][1] ** 2
                 else:
                     params, _ = curve_fit(fitfunc, xdata, ydata, p0=p0)
@@ -1688,13 +1711,16 @@ class Data:
                             fitfunc, (xdata, ydata), zdata, bounds=bounds, p0=p0
                         )
                         r2 = (
-                            np.corrcoef(zdata, fitfunc((xdata, ydata), *params))[0][1]
+                            np.corrcoef(zdata, fitfunc(
+                                (xdata, ydata), *params))[0][1]
                             ** 2
                         )
                     else:
-                        params, _ = curve_fit(fitfunc, (xdata, ydata), zdata, p0=p0)
+                        params, _ = curve_fit(
+                            fitfunc, (xdata, ydata), zdata, p0=p0)
                         r2 = (
-                            np.corrcoef(zdata, fitfunc((xdata, ydata), *params))[0][1]
+                            np.corrcoef(zdata, fitfunc(
+                                (xdata, ydata), *params))[0][1]
                             ** 2
                         )
                 except RuntimeError:
@@ -1707,10 +1733,13 @@ class Data:
                         fitfunc, (xdata, ydata), zdata, bounds=bounds, p0=p0
                     )
                     print(len(xdata), len(ydata))
-                    r2 = np.corrcoef(zdata, fitfunc((xdata, ydata), *params))[0][1] ** 2
+                    r2 = np.corrcoef(zdata, fitfunc(
+                        (xdata, ydata), *params))[0][1] ** 2
                 else:
-                    params, _ = curve_fit(fitfunc, (xdata, ydata), zdata, p0=p0)
-                    r2 = np.corrcoef(zdata, fitfunc((xdata, ydata), *params))[0][1] ** 2
+                    params, _ = curve_fit(
+                        fitfunc, (xdata, ydata), zdata, p0=p0)
+                    r2 = np.corrcoef(zdata, fitfunc(
+                        (xdata, ydata), *params))[0][1] ** 2
             dct = {
                 self.axes[0]: np.array(self._data[self.axes[0]]),
                 self.axes[1]: np.array(self._data[self.axes[1]]),
@@ -1786,16 +1815,18 @@ class Cyclic_Data(Data):
                     elif "backward" in method:
                         dct[key][i, :] = d[::-1][:l]
                     elif "min" in method:
-                        dct[key][i, :] = np.min(np.array([d[:l], d[l:][::-1]]), axis=0)
+                        dct[key][i, :] = np.min(
+                            np.array([d[:l], d[l:][::-1]]), axis=0)
                     elif "max" in method:
-                        dct[key][i, :] = np.max(np.array([d[:l], d[l:][::-1]]), axis=0)
+                        dct[key][i, :] = np.max(
+                            np.array([d[:l], d[l:][::-1]]), axis=0)
                     elif "rise" in method:
                         dct[key][i, :] = np.append(
-                            d[int(l / 2) : int(l)], d[int(l * 1.5) :][::-1]
+                            d[int(l / 2): int(l)], d[int(l * 1.5):][::-1]
                         )
                     elif "fall" in method:
                         dct[key][i, :] = np.append(
-                            d[: int(l / 2)][::-1], d[l : int(l * 1.5)]
+                            d[: int(l / 2)][::-1], d[l: int(l * 1.5)]
                         )
             self._data = dct
         else:
@@ -1810,9 +1841,11 @@ class Cyclic_Data(Data):
                 if "backward" in method:
                     self._data[key] = d[l:][::-1]
                 if "min" in method:
-                    self._data[key] = np.min(np.array([d[:l], d[l:][::-1]]), axis=0)
+                    self._data[key] = np.min(
+                        np.array([d[:l], d[l:][::-1]]), axis=0)
                 if "max" in method:
-                    self._data[key] = np.max(np.array([d[:l], d[l:][::-1]]), axis=0)
+                    self._data[key] = np.max(
+                        np.array([d[:l], d[l:][::-1]]), axis=0)
         return self
 
     @staticmethod
@@ -1831,7 +1864,7 @@ class Cyclic_Data(Data):
                     d[key] = self._data[key][i, :]
                 cd = d[cyclic_axis]
                 l = (
-                    np.argmin(cd[(np.argmin(cd) + 2) :]) + 2
+                    np.argmin(cd[(np.argmin(cd) + 2):]) + 2
                 )  # find the cycle length by finding the minimum of 2 consecutive cycles (hopefully this works well for stupid data too...)
                 for key in d:
                     rs = np.reshape(d[key], (-1, l))
@@ -1848,7 +1881,7 @@ class Cyclic_Data(Data):
         else:
             d = self._data[cyclic_axis]
             l = (
-                np.argmin(d[(np.argmin(d) + 1) :]) + 1
+                np.argmin(d[(np.argmin(d) + 1):]) + 1
             )  # find the cycle length by finding the minimum of 2 consecutive cycles (hopefully this works well for stupid data too...)
             dct = {}
             if l > 2:
@@ -1884,11 +1917,12 @@ class Cyclic_Data(Data):
             cyclic_axis = self.axes[0]
         shape = self._data[cyclic_axis].shape
         if len(shape) > 1:
-            raise RuntimeError("Labelling the cycles in a matrix is not implemented.")
+            raise RuntimeError(
+                "Labelling the cycles in a matrix is not implemented.")
         else:
             d = self._data[cyclic_axis]
             l = (
-                np.argmin(d[(np.argmin(d) + 1) :]) + 1
+                np.argmin(d[(np.argmin(d) + 1):]) + 1
             )  # find the cycle length by finding the minimum of 2 consecutive cycles (hopefully this works well for stupid data too...)
             n = np.repeat(np.arange(int(len(d) / l)), l)  # create the n label
             self._data[to_axis] = n
@@ -1906,7 +1940,8 @@ class Dataset:
         key = next(iter(self._dct))
         # print([self._dct[key][0] for key in self._dct])
         for ln in range(len(self._dct[key])):
-            s += "\t".join([str(self._dct[key][ln]) for key in self._dct]) + "\n"
+            s += "\t".join([str(self._dct[key][ln])
+                           for key in self._dct]) + "\n"
         # for key in self._dct:
         #     str+='{}\t{}\n'.format(key,self._dct[key])
         return s
