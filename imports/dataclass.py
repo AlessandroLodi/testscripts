@@ -271,13 +271,13 @@ class Subplot:
 class Figure:
     def __init__(
         self,
-        aspect_ratio=1.5,
+        aspect_ratio=1.6180,  # golden ratio
         rows=1,
         font=None,
         dpi=150,
         title="",
         labels=[],
-        size=1.0,
+        size=2.0,
         sharex=False,
         sharey=False,
         pad=0.2,
@@ -622,7 +622,7 @@ class Figure:
         show=True,
     ):
         Figure.cf = self
-        params = {"legend.fontsize": 6, "legend.handlelength": 1}
+        params = {"legend.fontsize": 12, "legend.handlelength": 1}
         plt.rcParams.update(params)
         if self._font:
             plt.rcParams.update(self._font)
@@ -631,11 +631,11 @@ class Figure:
         fig = plt.figure(
             name,
             figsize=(
-                4.2  # was 3.3
+                3.3  # was 3.3
                 * self._aspect_ratio
                 * self._size
-                * int((len(self._subplots)) / self._rows),
-                self._rows * 3.3 * self._size,
+                * int((len(self._subplots) + 1) / self._rows),
+                self._rows * 2. * self._size,
             ),
             dpi=self._dpi,
         )
@@ -1504,7 +1504,6 @@ class Data:
                 axis = 0
             dct = {}
             for key in self._data:
-                print(self._data.keys())
                 if method == "gradient":
                     dct[key] = np.gradient(self._data[key], axis=axis) / dx
                 elif "savgol" in method:
@@ -1793,7 +1792,7 @@ class Cyclic_Data(Data):
             cyclic_axis = self.axes[0]
         shape = self._data[cyclic_axis].shape
         if len(shape) > 1:
-            print(shape)
+            print(f'>>> shape of data {shape}')
             dct = {}
             l = int(shape[1] / 2)
             if "forward" in method or "backward" in method:
@@ -2189,7 +2188,7 @@ class Dataset:
                 )
         out = minimize(Dataset._residual, fit_params, args=(self, func))
         if "fit" in self._dct:
-            print("> Overwriting fit data.")
+            print(">>> Overwriting fit data.")
         self._dct["fit"] = []
         param_list = list(out.params)
         for i, data in enumerate(self["data"]):

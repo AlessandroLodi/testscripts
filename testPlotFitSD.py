@@ -72,7 +72,8 @@ for vc in vcs:  # loop over the peaks values
     gMaxTemp = gatetrace["Gsd"].values[
         (np.argmin(np.abs(gatetrace["Vg"].values - vc)))
     ]  # this is a bit hard to read but it tells us the Gsd at the voltage: vc. We will take this as the initial guess for Gmax for the fitting
-    print("Max Gsd in this window: {:.3e} S".format(gMaxTemp))  # print the Gmax
+    print("Max Gsd in this window: {:.3e} S".format(
+        gMaxTemp))  # print the Gmax
     p0 = {
         "Vc": vc,
         "Gmax": gMaxTemp,
@@ -98,12 +99,14 @@ for vc in vcs:  # loop over the peaks values
     gatetraceFit = gatetrace.copy()  # make a copy of the gate trace
     gatetraceFit["Gsd"] = fitGsd  # replace the Gsd data with the fitted data
     try:
-        gatetraceFits.append(gatetraceFit)  # add the fitted gate trace to the list
+        # add the fitted gate trace to the list
+        gatetraceFits.append(gatetraceFit)
     except:
         pass
 
 
-gatetraceFitSum = gatetrace.copy()  # make another copy of the gate trace to play with
+# make another copy of the gate trace to play with
+gatetraceFitSum = gatetrace.copy()
 gatetraceFitSum["Gsd"] -= gatetraceFitSum[
     "Gsd"
 ].values  # make the Gsd values equal to themselves minus themselves, i.e. make them zero!
@@ -121,4 +124,3 @@ fig.add_subplot(
     Subplot_GVg(gatetrace, *gatetraceFits, gatetraceFitSum, legend=True)
 )  # plot the experimental gate traces, and the list of fits all together
 fig.visualise()  # visualise, or save
-

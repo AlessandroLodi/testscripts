@@ -212,11 +212,13 @@ class Subplot_FitAlpha(Subplot_GVsVg):
         super().__init__(args[0], **kwargs)
 
 
-class Subplot_FitVc(Subplot_GVsVg):
+# class Subplot_FitVc(Subplot_GVsVg):
+class Subplot_FitVc(Subplot_GVg):
     def __init__(self, *args, **kwargs):
         def onload(subplot):
             dat = subplot.get_data()[0]
             try:
+                print(f'>>> dat.ps are {dat.ps()}')
                 vc = dat.ps("Vc")["Vc"]
                 (self.vcline,) = subplot["ax"].plot(vc, 0, "x", color="black")
             except:
@@ -239,6 +241,9 @@ class Subplot_FitVc(Subplot_GVsVg):
         if len(args) != 1:
             return
         super().__init__(args[0], **kwargs)
+
+
+Subplot_GVg
 
 
 class Subplot_ResonanceBiasTrace(Subplot_IV):
@@ -363,7 +368,7 @@ class QTLab_Data(Cyclic_Data):
         ps = {}
         if filename and (type(filename) is str or type(filename) is np.str_):
             if filename.split(".")[-1] in ("dat", "csv", "txt"):
-                print(f">>> Loading {filename}")
+                print(f"Loading ... {filename}")
                 # read the header of the filename
                 axes = ("x", "y")
                 if kwargs.get("readheader", True):
@@ -546,7 +551,7 @@ class Stability_Diagram(QTLab_Data):
         vgs = np.unique(self._data["Vg"])
         i = 0
         for vg in vgs:
-            print(f'iteration number {i}', end='\r')
+            print(f'>>> Correcting offeet. Iteration number {i}', end='\r')
             d = self[self["Vg"] == vg]
             imean = np.mean(d[np.abs(d["Vsd"].values) < zero]["Isd"].values)
             d["Isd"] -= imean
@@ -590,14 +595,13 @@ class Stability_Diagram(QTLab_Data):
         matrix[inverse, np.arange(len(vg))] = 1
         # perform the dot product for all the keys
         for k in ddat._data:
-            print(k)
             ddat._data[k] = (
                 matrix.dot(np.reshape(
                     ddat[k].values, (-1, 1))).T.flatten() / weigths
             )
         del ddat._data["Vsd"]  # remove averaged column
         ddat.axes = ("Vg", "Isd")
-        # self._gatetrace = ddat
+        self._gatetrace = ddat
         return ddat
 
     def shift_gatetrace(self, smooth: bool = None):
@@ -653,14 +657,6 @@ class Stability_Diagram(QTLab_Data):
         self._gate_trace_derivative = ddat
         return ddat
 
-    def do_derivative(self, axis: str):
-        """
-        Return the derivative of the dataset
-        """
-        ddat = self.copy()
-        if axis.lower() in "Vg":
-            pass
-
     def bias_trace(self, v_gate):
         ddat = self.copy()
         try:
@@ -680,11 +676,11 @@ class Stability_Diagram(QTLab_Data):
         un, inverse, weights = np.unique(
             vsd, return_inverse=True, return_counts=True)
         matrix = np.zeros((len(un), len(vsd)))
-        print(matrix)
+        print(f'>>> matrix is {matrix}')
         matrix[inverse, np.arange(len(vsd))] = 1
 
         for k in ddat._data:
-            print(f"this is the key: {k}")
+            print(f">>> k in ddat._data : {k}")
             ddat._data[k] = (
                 matrix.dot(np.reshape(
                     ddat[k].values, (-1, 1))).T.flatten() / weights
@@ -697,15 +693,13 @@ class Stability_Diagram(QTLab_Data):
 
     def resonance_bias_trace(self, width=0.0, centre=37):
         dat = self.copy()
-        print(centre)
+        print(f'>>> centre {centre}')
         u = np.unique(dat._data["Vg"])
         if not width:
-            print("hello")
             dat.ps(Vc=centre)
             cvc = u[np.argmin(np.abs(u - dat.ps("Vc")["Vc"]))]
             dat = dat[dat["Vg"].values == cvc]
         else:
-            print("world")
             dat = dat[np.abs(dat["Vg"].values - dat.ps("Vc")["Vc"]) < width]
             # average Vsd values for each Vg {
             x = dat["Vsd"].values
@@ -912,7 +906,7 @@ class Stability_Diagram(QTLab_Data):
                 sd, p0=p0, bounds=bounds, ignore_error=False,)
         # params = [vc, alpha, 0.8, 0.1]
         # fit=dat.copy()
-        print("Fitting data with R^2 = {:.3g}".format(r2))
+        print(">>> Fitting data with R^2 = {:.3g}".format(r2))
         if side != "both":
             fit = dat.copy()
             fit["Isd"] = np.array(
@@ -1023,7 +1017,6 @@ class Stability_Diagram(QTLab_Data):
         vc = self.ps("Vc")
         if not vc:
             a, _ = self.fit_coulomb_peak()
-            print("mi sto incazzando")
             vc = a["Vc"]
         fig = Figure()
         fig.add_subplot(Subplot_FitAlpha(self, **kwargs))

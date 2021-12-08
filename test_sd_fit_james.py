@@ -17,12 +17,14 @@ from matplotlib.colors import LinearSegmentedColormap
 data_dir = r"C:\\Users\\oums1095\\Nexus365\\Simen Sopp - OxNanoSpin Team Folder\\Transport\\Ale01_r31\\5.Temperature_Dataset\copy_justSD_Aug"
 fig_dir = r"C:\\Users\\oums1095\\projects\\gnr_set\\figures"
 os.chdir(data_dir)
+set_number = 20
 # this finds all datasets labelled in a certain way, I renamed your file so the regular expression matching works to: 172335_Ale01_IVsVg_r31.dat_
 dset = (QTLab_Dataset.find())
 # this shows how the load method splits the filename up to make a list of dictionaries.
 print(dset)
 # the methods Bart and me wrote for stability diagrams assume that the axes are labelled in this way (not Vsd_mV, and Vg_V, etc.. as they are in the text file)
-data = dset[-3].load(Stability_Diagram, axes=("Vg", "T", "Vsd", "Isd", "t"))
+data = dset[set_number].load(
+    Stability_Diagram, axes=("Vg", "T", "Vsd", "Isd", "t"))
 dataSD = data[0]  # the SD is a pandas dataframe that is the first item
 
 # i took the temperature of the measurement as the mean of all the values of temperature recording during the stability diagram
@@ -31,7 +33,7 @@ print(
     "Stability diagram measured at {:.1f} K".format(T)
 )  # print the temperature to 1 decimal place
 dataSD.resample(
-    512, 512
+    128, 128
 )  # resample is a useful tool to make your data more manageable for some of the methods, especially when you are just playing around with the data and script at first, you can remove this line for the final figure!
 dataSD["Vsd"] = (
     1e-3 * dataSD["Vsd"].values
@@ -41,14 +43,51 @@ dataSD.correct_offset()  # this is a stability diagram method can be found in qt
 gatetrace = (
     dataSD.zero_bias_gate_trace()
 )  # this method generate a zero-bias condutance gate trace, again see the stability diagram class in qtlab_data for exactly how it works
-fig = Figure()  # make a figure object, you can define things like aspect ratio and size
-fig.add_subplot(Subplot_IVsVg(dataSD))  # plot the SD
-fig.add_subplot(Subplot_GVsVg(dataSD))  # plot the conductance SD
-fig.add_subplot(Subplot_GVg(gatetrace))  # plot the conductance gate trace
-fig.visualise()  # see the plot - enter a file name as a string to export it e.g. 'test.pdf'
+# fig = Figure()  # make a figure object, you can define things like aspect ratio and size
+# fig.add_subplot(Subplot_IVsVg(dataSD))  # plot the SD
+# fig.add_subplot(Subplot_GVsVg(dataSD))  # plot the conductance SD
+# fig.add_subplot(Subplot_GVg(gatetrace))  # plot the conductance gate trace
+# fig.visualise()  # see the plot - enter a file name as a string to export it e.g. 'test.pdf'
+vc = []
+for i in range(5):
+    vc.append(gatetrace.manual_fit_Vc())
+vc_round = [round(i, 2) for i in vc]
+print(vc_round)
+
 #####
-# raise SystemExit  # Ale  - you can comment out this line if you want to see a fit to your data below
+# Ale  - you can comment out this line if you want to see a fit to your data below
+raise SystemExit
 ####
+# keys are T_K, values are list of Vg_V at which I see a peak
+vg_fit = {0.025: [-13.95, -6.92, 3.10, 10.91, 16.26],
+          0.5: [-12.46, -7.41, 2.8, 8.27, 15.0],
+          1: [-12.27, -6.15, 2.8, 9.71, 16.5],
+          9.7: [-12.64, -7.41, 3.29, 9.05, 15.84],
+          20: [-12.15, -5.79, 4.13, 9.83, 16.38],
+          29: [-12.09, -5.73, 3.59, 9.41, 16.8],
+          29.1: [-11.91, -5.97, 4.25, 9.89, 16.32],
+          59.5: [-12.03, -6.15, 4.19, 9.11, 15.72],
+          72: [-12.51, -6.86, -1.34, 7.85, 14.64],
+          238: [9.34, -5.26],
+          185.8: [-12.27, -6.81, 3.41, 8.45, 14.28],
+          188.5: [-14.55, -8.67, 3.82, 8.75, 14.27],
+          205.3: [-12.51, -7.9, 3.82, 10.67],
+          # bandgap from -18.28, 6.83
+          275.6: [-18.88, -7.05, 0.4, 7.37, 14.1],
+          # this one seems to have a bandgap deep extended from -14 to 11.7
+          283.2: [-15.22, -5.73, 4.37, 10.56, 16.2],
+          # these three have only one broad peak at Vg < 0
+          294.5: [-13.12, -7.05, 2.74, 8.57, 13.38],
+          294.7: [-13.66, -6.33, 2.44, 8.33, 13.26],
+          294.9: [-13.48, -9.81, -1.7, 7.91, 14.04],
+          # gap between -9.81 and 2.56
+          295.1: [-13.12, -9.81, 2.56, 8.93, 15.18],
+          # FET behaviour with, switch on around -5.73
+          295.3: [-12.46, 6.11, 13.74, 17.16, -18.7],
+          # gap between -14.26 and 7.43
+          295.5: [-14.26, 7.43]
+          }
+
 vcs = [
     -17.97,
     -12.16,
