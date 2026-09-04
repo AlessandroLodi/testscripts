@@ -1,3 +1,13 @@
-/.idea
-/.vscode
-/alodi_venv2
+.DS_Store
+.idea/
+.vscode/
+.venv/
+.pytest_cache/
+.virtual_documents/
+.ipynb_checkpoints/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+alodi_venv2/
