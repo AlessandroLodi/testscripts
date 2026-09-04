@@ -1,6 +1,12 @@
 import numpy as np
 from scipy.special import expi
 
+from transport_analysis.models import (
+    lifetime_broadening as calculate_lifetime_broadening,
+    single_level_current,
+    thermal_broadening as calculate_thermal_broadening,
+)
+
 
 def calc():
     VD = 1e-3
@@ -616,9 +622,12 @@ class physics_models:
 
     @staticmethod
     def lifetime_broadening(Vg, Vc, gamma, alpha):
-        G0 = 7.7480917310e-5  # S
-        gamma2 = gamma * gamma
-        return G0 * gamma2 / (gamma2 / 4 + (alpha * (Vg - Vc)) ** 2)
+        return calculate_lifetime_broadening(
+            Vg,
+            center_voltage=Vc,
+            broadening=gamma,
+            gate_coupling=alpha,
+        )
 
     @staticmethod
     def sub_threshold_swing_pure(Isd, Vg):
@@ -627,24 +636,25 @@ class physics_models:
 
     @staticmethod
     def thermal_broadening(Vg, T, Vc, Gmax, alpha):
-        e = 1.602e-19
-        # kb = 8.6173303e-8  # eV.K-1
-        kb = 1.3806e-23  # J.K-1
-        # T = 77 # K
-        kb = 8.6173303e-5  # eV.K-1
-        return Gmax / (np.cosh((alpha * (Vg - Vc)) / (2 * kb * T)) ** 2)
+        return calculate_thermal_broadening(
+            Vg,
+            temperature=T,
+            center_voltage=Vc,
+            peak_conductance=Gmax,
+            gate_coupling=alpha,
+        )
 
     @staticmethod
     def stabdiag(data, prefactor, Vc, alpha_gate, alpha_source, T):
-        kb = 8.6173303e-5  # eV.K-1
-        Vs = data[1]
-        Vg = data[0]
-        mu = (
-            alpha_gate * Vc - alpha_gate * Vg - alpha_source * Vs
-        )  # == mu0 - alpha_gate * Vg - alpha_source * Vs
-        fd = 1 / (1 + np.exp(mu / (kb * T)))
-        fs = 1 / (1 + np.exp((mu + Vs) / (kb * T)))
-        return prefactor * (fd - fs)
+        return single_level_current(
+            data[0],
+            data[1],
+            prefactor=prefactor,
+            center_voltage=Vc,
+            gate_coupling=alpha_gate,
+            source_coupling=alpha_source,
+            temperature=T,
+        )
 
     @staticmethod
     def curved_improved_marcus(

@@ -1,298 +1,172 @@
-# Helper Functions
+"""Compatibility layer for older notebooks.
 
-import os
-import glob
-import shutil
+New code should import from :mod:`transport_analysis`. The aliases in this
+module keep existing research notebooks working while using the refactored,
+tested implementations.
+"""
+
+from __future__ import annotations
+
+import warnings
+from pathlib import Path
+
 import numpy as np
-from imports.qtlab_data import *
-from imports.dataclass import *
-from imports.physics_models import *
+
+from transport_analysis.analysis import differentiate, fit_polynomial
+from transport_analysis.datasets import build_filename_pattern
+from transport_analysis.files import copy_files, rename_files
+from transport_analysis.plotting import plot_trace
 
 
-def match_pattern(*args) -> str:
-    """
-    Given a list of string it will return the dir pattern.
-    Take a look at what the regex does in dedicated website
-    """
-    m = "|".join(args)
-    pattern = ".*?(?P<folder>{}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)".format(
-        m
-    )
-    return pattern
+def match_pattern(*folders: str) -> str:
+    """Return the QTLab filename pattern for one or more folders."""
+
+    return build_filename_pattern(folders)
 
 
-def quick_plot(x, y, title: str = None, log_yaxis: bool = None):
-    """
-    Very simple plot. Handy use
-    """
+def pattern_matcher(eburn: str, mol: str) -> str:
+    """Backward-compatible two-folder form of :func:`match_pattern`."""
+
+    return match_pattern(eburn, mol)
+
+
+def quick_plot(x, y, title: str | None = None, log_yaxis: bool = False):
+    """Create and show a simple trace plot."""
+
     import matplotlib.pyplot as plt
 
-    fig = plt.figure()
-    ax = fig.add_subplot()
-    ax.scatter(x, y)
-    if log_yaxis:
-        ax.set_yscale("log")
-    plt.title(title)
+    figure, axes = plot_trace(x, y, title=title, log_y=log_yaxis)
     plt.show()
+    return figure, axes
 
 
 def quick_plot_smooth(
-    x, y, window_length: int, polyorder: int, title: str = None, log_yaxis: bool = None
+    x,
+    y,
+    window_length: int,
+    polyorder: int,
+    title: str | None = None,
+    log_yaxis: bool = False,
 ):
-    """
-    Quick Simple Plot. y axis smoothed according to savgol_filter algo.
+    """Smooth a trace with Savitzky-Golay filtering, then plot it."""
 
-    window_length = 51, polyorder = 3 works most of the time just fine
-    """
     from scipy.signal import savgol_filter
 
-    y_smooth = savgol_filter(y, window_length, polyorder)
-    fig = plt.figure()
-    ax = fig.add_subplot()
-    ax.scatter(x, y_smooth)
-    if log_yaxis:
-        ax.set_yscale("log")
-    plt.title(title)
-    plt.show()
+    smoothed = savgol_filter(y, window_length, polyorder)
+    return quick_plot(x, smoothed, title=title, log_yaxis=log_yaxis)
 
 
 def D(xlist, ylist):
-    """
-    Calculate the derivative of a function from first difference
-    Ex: vg_deriv, isd_deriv = D(vg_one, isd_one)
-    """
-    import numpy as np
+    """Backward-compatible alias for :func:`differentiate`."""
 
-    yprime = np.diff(ylist) / np.diff(xlist)
-    xprime = []
-    for i in range(len(yprime)):
-        xtemp = (xlist[i + 1] - xlist[i]) / 2
-        xprime = np.append(xprime, xtemp)
-    return xprime, yprime
+    return differentiate(xlist, ylist)
 
 
-def fit_subthreshold_secondOrder(x, y, smooth: bool = None):
+def fit_subthreshold_secondOrder(x, y, smooth: bool = False):
+    """Fit a quadratic to a trace and return a structured result."""
 
-    """
-    Perform a polynomial fit on the y trace.
-    y-axis is first smoothed and then fed inside the algorithm
-    """
-    from scipy.signal import savgol_filter
-    import numpy as np
+    return _fit_trace(x, y, degree=2, smooth=smooth)
 
-    Polynomial = np.polynomial.Polynomial
 
+def fit_ss_firstOrder(x, y, smooth: bool = False):
+    """Fit a line to a trace and return a structured result."""
+
+    return _fit_trace(x, y, degree=1, smooth=smooth)
+
+
+def _fit_trace(x, y, *, degree: int, smooth: bool):
+    values = np.asarray(y, dtype=float)
     if smooth:
-        y_smooth = savgol_filter(y, 51, 3)
+        from scipy.signal import savgol_filter
 
-    y_min = np.min(y_smooth)
-    vg_points = x
-    y_pts = y_smooth * 10 ** np.floor(np.abs(np.log10(i)))
-    isd_min, isd_max = (
-        np.min(y_pts[: np.argmin(y_pts)]),
-        np.max(y_pts[: np.argmin(y_pts)]),
-    )
-    print(f"Minimum of y at index = {np.argmin(y_min)} w/ value = {isd_min}")
-
-    x_new = np.linspace(
-        vg_points[10], vg_points[np.argmin(y_smooth)], num=len(vg_points),
-    )
-
-    pfit, stats = Polynomial.fit(
-        vg_points[10 : np.argmin(y_smooth)],
-        y_pts[10 : np.argmin(y_smooth)],
-        2,
-        full=True,
-        # window=(np.log(isd_min), np.log(isd_max)),
-        # domain=(np.log(isd_min), np.log(isd_max))
-        window=(isd_min, isd_max),
-        domain=(isd_min, isd_max),
-    )
-    print(8 * "*")
-    print("Raw fit results:", pfit, stats, sep="\n")
-    const, slope, second = pfit
-    resid, rank, sing_val, rcond = stats
-    rms = np.sqrt(resid[0] / len(y_pts[: np.argmin(y_smooth)]))
-    print(
-        f"Fit: const = {const:.3f}; slope = {slope:.3f}; second = {second:.3f}; rms residual = {rms:.4f})"
-    )
-    print(8 * "*")
-    fig1 = plt.figure()
-    ax1 = fig1.add_subplot()
-    ax1.scatter(vg_points, y_pts)
-    ax1.plot(x_new, pfit(x_new), color="orange")
-    ax1.set_yscale("log")
-    plt.title("Subthreshold Swing")
-    plt.text(
-        0.35,
-        0.8,
-        f"Fit Model: c + a0*x + a1*x^2.\n c = {const:.3f}; a0 = {slope:.2f}; a1 = {second:.3f};\n rms residual = {rms:.4f}",
-        {"color": "k", "fontsize": 12},
-        horizontalalignment="left",
-        verticalalignment="top",
-        transform=fig1.transFigure,
-    )
+        if values.size < 5:
+            raise ValueError("at least five samples are required for smoothing")
+        window = min(51, values.size if values.size % 2 else values.size - 1)
+        values = savgol_filter(values, window, min(3, window - 1))
+    return fit_polynomial(x, values, degree=degree)
 
 
-def fit_ss_firstOrder(x, y, smooth: bool = None):
+def to_excel(x, y, title: str | None = None) -> Path:
+    """Export two columns to CSV and return the output path.
 
+    The historical function name is retained even though the output is CSV.
     """
-    Perform a polynomial fit on the y trace.
-    y-axis is first smoothed and then fed inside the algorithm
-    """
-    from scipy.signal import savgol_filter
-    import numpy as np
 
-    Polynomial = np.polynomial.Polynomial
-
-    if smooth:
-        y_smooth = savgol_filter(y, 51, 3)
-
-    y_min = np.min(y_smooth)
-    vg_points = x
-    y_pts = y_smooth * 10 ** np.floor(np.abs(np.log10(i)))
-    isd_min, isd_max = (
-        np.min(y_pts[: np.argmin(y_pts)]),
-        np.max(y_pts[: np.argmin(y_pts)]),
-    )
-    print(f"Minimum of y at index = {np.argmin(y_min)} w/ value = {isd_min}")
-
-    x_new = np.linspace(
-        vg_points[10], vg_points[np.argmin(y_smooth)], num=len(vg_points),
-    )
-
-    pfit, stats = Polynomial.fit(
-        vg_points[40 : np.argmin(y_smooth)],
-        y_pts[40 : np.argmin(y_smooth)],
-        1,
-        full=True,
-        # window=(np.log(isd_min), np.log(isd_max)),
-        # domain=(np.log(isd_min), np.log(isd_max))
-        window=(isd_min, isd_max),
-        domain=(isd_min, isd_max),
-    )
-    print(8 * "*")
-    print("Raw fit results:", pfit, stats, sep="\n")
-    const, slope = pfit
-    resid, rank, sing_val, rcond = stats
-    rms = np.sqrt(resid[0] / len(y_pts[: np.argmin(y_smooth)]))
-    print(f"Fit: const = {const:.3f}; slope = {slope:.3f}; rms residual = {rms:.4f})")
-    print(8 * "*")
-    fig1 = plt.figure()
-    ax1 = fig1.add_subplot()
-    ax1.scatter(vg_points, y_pts)
-    ax1.plot(x_new, pfit(x_new), color="orange")
-    ax1.set_yscale("log")
-    plt.title("Subthreshold Swing")
-    plt.text(
-        0.35,
-        0.8,
-        f"Fit Model: c + a0*x \n c = {const:.3f}; a0 = {slope:.2f}; \n rms residual = {rms:.4f}",
-        {"color": "k", "fontsize": 12},
-        horizontalalignment="left",
-        verticalalignment="top",
-        transform=fig1.transFigure,
-    )
-
-
-def to_excel(x, y, title: str = None):
-    """
-    Create a table with just two columns 
-    Ex: to_excel(vg, gsd)
-    """
-    import numpy as np
-
-    a = np.asarray([x, y])
+    if not title:
+        raise ValueError("title must provide an output filename")
+    output_path = Path(title).with_suffix(".csv")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     np.savetxt(
-        title + ".csv", a.T, delimiter=",", header="Vg, Gsd", comments="", fmt="%.18f",
+        output_path,
+        np.column_stack((x, y)),
+        delimiter=",",
+        header="Vg,Gsd",
+        comments="",
+        fmt="%.18e",
     )
-
-
-def pattern_matcher(eburn: str, mol: str):
-    return f".*?(?P<folder>{eburn}|{mol}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)"
+    return output_path
 
 
 def get_dataset(data_folder: str):
-    pattern = f".*?(?P<folder>{data_folder}).*?\d+_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)"
-    dset = QTLab_Dataset.find(pattern=pattern)
-    ivsvgset = dset[dset["type"] == "IVsVg"]
-    data_folder = ivsvgset[ivsvgset["folder"] == data_folder]
-    devices_list = np.unique(data_folder["device"])
-    return data_folder, devices_list
+    """Find stability-diagram datasets and their device identifiers."""
 
+    from imports.qtlab_data import QTLab_Dataset
 
-def func(dirname):
-    if os.path.exists(os.path.join(dirname, ".dat")):
-        c = 0
-        for roots, dir, files in os.walk(dirname):
-            c += len([f for f in files if f.endswith(".dat")])
-        print(f"{dirname} has {c} number of dat")
-
-
-# func('E:\\AG_LG06_4_GNR_anthracene\\')
-
-
-def func2(dirname, test):
-    for root, dirs, files in os.walk(dirname):
-        d = [f for f in files if f.endswith(".dat") and f]
-        if d and d is not None:
-            # this just replace the string but doesnt actually change the filename
-            a = (", ".join(str(i) for i in d)).replace(
-                "GNR_anthracene", "GNR-2_anthracene"
-            )
-            print(a)
-            # print(f'length of a: {len(a)} and length of d: {len(d)}')
-            # shutil.copy(a, test)
+    dataset = QTLab_Dataset.find(pattern=match_pattern(data_folder))
+    stability_diagrams = dataset[dataset["type"] == "IVsVg"]
+    selected = stability_diagrams[stability_diagrams["folder"] == data_folder]
+    return selected, np.unique(selected["device"])
 
 
 def copy_allFiles(path, dst):
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-    for root, dirs, files in os.walk(path):
-        for f in files:
-            path_file = os.path.join(root, f)
-            shutil.copy2(path_file, dst)
+    """Backward-compatible alias for :func:`copy_files`."""
 
-
-def rename(path, old, new):
-    # os.chdir(path)
-    for t in os.walk(path):
-        # os.walk returns a tuple so i walk thr the tuple to get the individual lists
-        for l in t:
-            # the first two things are garbage so remove them
-            str1 = ",".join(l[2:])
-            os.rename(
-                os.path.join(path, str1), os.path.join(path, str1.replace(old, new))
-            )
+    return copy_files(path, dst)
 
 
 def rename_filenames(path, old_string, new_string):
-    os.chdir(path)
-    for f in os.listdir(path):
-        if old_string in f:
-            os.rename(
-                os.path.join(path, f),
-                os.path.join(path, f.replace(old_string, new_string)),
-            )
+    """Backward-compatible alias for :func:`rename_files`."""
+
+    return rename_files(path, old_string, new_string)
 
 
-def replace_noInPlace(path, dst):
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-    os.chdir(path)
-    for roots, dir, files in os.walk(path):
-        for f in files:
-            f.replace("GNR_anthracene", "GNR-2_anthracene")
+def rename(path, old, new):
+    """Backward-compatible recursive rename helper."""
+
+    return rename_files(path, old, new, recursive=True)
 
 
-def grab_just_SD(path):
-    for roots, dirs, files in os.walk(path):
-        for f in files:
-            if f.endswith("dat") and "IVsVg" in f:
-                QTLab_Dataset.find().load(Stability_Diagram)
+def count_data_files(directory: str | Path) -> int:
+    """Return the number of ``.dat`` files below *directory*."""
+
+    path = Path(directory)
+    if not path.is_dir():
+        raise NotADirectoryError(path)
+    return sum(1 for candidate in path.rglob("*.dat") if candidate.is_file())
 
 
-def data_folder(path):
-    for dirs in os.walk(path):
-        if "burn" or "mol" in dirs:
-            print(dirs)
+def func(dirname):
+    """Deprecated print-based wrapper around :func:`count_data_files`."""
+
+    warnings.warn("func() is deprecated; use count_data_files()", DeprecationWarning)
+    count = count_data_files(dirname)
+    print(f"{dirname} has {count} .dat files")
+    return count
+
+
+__all__ = [
+    "D",
+    "copy_allFiles",
+    "count_data_files",
+    "fit_ss_firstOrder",
+    "fit_subthreshold_secondOrder",
+    "func",
+    "get_dataset",
+    "match_pattern",
+    "pattern_matcher",
+    "quick_plot",
+    "quick_plot_smooth",
+    "rename",
+    "rename_filenames",
+    "to_excel",
+]

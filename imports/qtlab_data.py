@@ -1,10 +1,10 @@
 import os
+import inspect
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.pylab as pl
-from matplotlib.cm import get_cmap
 import matplotlib.mlab as mlab
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
@@ -12,7 +12,6 @@ import re
 import scipy.interpolate
 from scipy.optimize import curve_fit
 from matplotlib.colors import to_rgba
-import re
 from collections import OrderedDict
 
 from .dataclass import *
@@ -21,6 +20,41 @@ from .physics_models import *
 # from dataclass import *
 # from physics_models import *
 import calendar
+import time
+from pathlib import Path
+
+
+_COLUMN_PATTERN = re.compile(r"# Column \d+:[\s\S]+?name: (.+)\n")
+_COMMENT_PATTERN = re.compile(r"# ([A-Za-z0-9_]+): ([^\n]+)")
+
+
+def _read_qtlab_header(filename):
+    """Return axis names and metadata from a QTLab text header."""
+
+    header_lines = []
+    with open(filename, "r", encoding="utf-8", errors="replace") as stream:
+        for line in stream:
+            if line.startswith("#") or not line.strip():
+                header_lines.append(line)
+                continue
+            break
+
+    header = "".join(header_lines)
+    metadata = {}
+    for key, raw_value in _COMMENT_PATTERN.findall(header):
+        try:
+            metadata[key] = float(raw_value)
+        except ValueError:
+            metadata[key] = raw_value.strip()
+
+    if len(header_lines) >= 2:
+        try:
+            metadata["timestamp"] = calendar.timegm(
+                time.strptime(header_lines[1][17:37], "%b %d %H:%M:%S %Y")
+            )
+        except (IndexError, ValueError):
+            pass
+    return _COLUMN_PATTERN.findall(header), metadata
 
 
 class Subplot_IVg(Subplot):
@@ -362,146 +396,51 @@ class Subplot_ShowExcitationLines(Subplot_GVsVg):
 
 class QTLab_Data(Cyclic_Data):
     @classmethod
-    # this override the methods you can find in the Data class
     def load_from_file(cls, filename, **kwargs):
-        dat = None
-        ps = {}
-        if filename and (type(filename) is str or type(filename) is np.str_):
-            if filename.split(".")[-1] in ("dat", "csv", "txt"):
-                print(f"Loading ... {filename}")
-                # read the header of the filename
-                axes = ("x", "y")
-                if kwargs.get("readheader", True):
-                    # read the entire reader
-                    header = ""
-                    with open(filename, "r") as f:
-                        i = 0
-                        while True:
-                            i += 1
-                            ln = f.readline()
-                            if i == 2:
-                                ps["timestamp"] = calendar.timegm(
-                                    time.strptime(
-                                        ln[17:37], "%b %d %H:%M:%S %Y")
-                                )
-                            if len(ln) > 0 and (ln[0] == "#" or ln[0] == "\n"):
-                                header += ln
-                            else:
-                                break
-                    axes = re.findall(
-                        "# Column \d+:[\s\S]+?name: (.+)\n", header)
-                    comments = re.findall(
-                        "# ([a-zA-Z0-9_]+): ([a-zA-Z0-9_\.]+)\n", header
-                    )
-                    for comment in comments:
-                        try:
-                            ps[comment[0]] = float(comment[1])
-                        except:
-                            ps[comment[0]] = comment[1]
+        """Load a QTLab text file or MATLAB file into this data class."""
 
-                # set the axes (which might have been read from the file)
-                axes = kwargs.get("axes", axes)
-                ps["axes"] = axes
-                # add qtlab standards to the kwargs for pandas
-                # these two if lines add two dic elements
-                # {'comment': '#', 'delimiter', '\t'}
-                if "comment" not in kwargs:
-                    kwargs["comment"] = "#"
-                if "delimiter" not in kwargs:
-                    kwargs["delimiter"] = "\t"
-                # remove non pandas keys:
-                pandas_dct = dict(
-                    sep=", ",
-                    delimiter=None,
-                    header="infer",
-                    names=None,
-                    index_col=None,
-                    usecols=None,
-                    squeeze=False,
-                    prefix=None,
-                    mangle_dupe_cols=True,
-                    dtype=None,
-                    engine=None,
-                    converters=None,
-                    true_values=None,
-                    false_values=None,
-                    skipinitialspace=False,
-                    skiprows=None,
-                    nrows=None,
-                    na_values=None,
-                    keep_default_na=True,
-                    na_filter=True,
-                    verbose=False,
-                    skip_blank_lines=True,
-                    parse_dates=False,
-                    infer_datetime_format=False,
-                    keep_date_col=False,
-                    date_parser=None,
-                    dayfirst=False,
-                    iterator=False,
-                    chunksize=None,
-                    compression="infer",
-                    thousands=None,
-                    decimal=b".",
-                    lineterminator=None,
-                    quotechar='"',
-                    quoting=0,
-                    escapechar=None,
-                    comment=None,
-                    encoding=None,
-                    dialect=None,
-                    # tupleize_cols=None, deprecated
-                    error_bad_lines=True,
-                    warn_bad_lines=True,
-                    skipfooter=0,
-                    # skip_footer=0, deprecated
-                    doublequote=True,
-                    delim_whitespace=False,
-                    low_memory=True,
-                    # buffer_lines=None, deprecated
-                    memory_map=False,
-                    float_precision=None,
-                )
-                for key in kwargs:
-                    # print(f'key in kwargs are {key}')
-                    if key in pandas_dct:
-                        # print(f'kwargs[key] is: {kwargs[key]}')
-                        pandas_dct[key] = kwargs[key]
-                for key in pandas_dct:
-                    # print(f'key in pandas_dct is {key}')
-                    if key in kwargs:
-                        del kwargs[key]
-                del pandas_dct["names"]
-                d = pd.read_csv(filename, names=axes, **pandas_dct)
-                dat = {}
-                for key in d:
-                    if not d[key].empty:
-                        dat[key] = np.array(d[key])
-                if not dat:
-                    print(">> Warning: no data found for {}".format(filename))
-            elif filename.split(".")[-1] in ("mat"):
-                print(f">>> Loading {filename}")
-                # set the axes (which might have been read from the file)
-                axes = kwargs.get("axes", ("x", "y"))
-                ps["axes"] = axes
-                dct = loadmat(filename)
-                dat = {}
-                for key in axes:
-                    if key in dct and len(dct[key]) > 0:
-                        dat[key] = np.array(dct[key][0])
-                if not dat:
-                    print(
-                        ">> Warning: no data found in axes {} for {}. Possible axes: {}".format(
-                            axes, filename, [key for key in dct]
-                        )
-                    )
-            else:
-                raise RuntimeError(
-                    "Currently only supporting .txt, .dat, .csv files as raw data."
-                )
-        if dat:
-            return cls(dat, **{**ps, **kwargs})
-        return None
+        if not filename:
+            return None
+        path = Path(filename)
+        suffix = path.suffix.lower()
+        settings = dict(kwargs)
+        axes = settings.pop("axes", None)
+        read_header = settings.pop("readheader", True)
+        metadata = {}
+
+        if suffix in {".dat", ".csv", ".txt"}:
+            header_axes, metadata = _read_qtlab_header(path) if read_header else ([], {})
+            axes = tuple(axes or header_axes or ("x", "y"))
+
+            valid_pandas_keys = set(inspect.signature(pd.read_csv).parameters)
+            pandas_options = {
+                key: settings.pop(key)
+                for key in tuple(settings)
+                if key in valid_pandas_keys
+            }
+            pandas_options.setdefault("comment", "#")
+            pandas_options.setdefault("delimiter", "\t")
+            frame = pd.read_csv(path, names=axes, **pandas_options)
+            data = {
+                column: frame[column].to_numpy()
+                for column in frame
+                if not frame[column].empty
+            }
+        elif suffix == ".mat":
+            axes = tuple(axes or ("x", "y"))
+            matlab_data = loadmat(path)
+            data = {
+                axis: np.asarray(matlab_data[axis][0])
+                for axis in axes
+                if axis in matlab_data and len(matlab_data[axis]) > 0
+            }
+        else:
+            raise ValueError("supported file types are .dat, .csv, .txt, and .mat")
+
+        if not data:
+            return None
+        metadata["axes"] = axes
+        return cls(data, **metadata, **settings)
 
 
 class Stability_Diagram(QTLab_Data):
@@ -1057,41 +996,19 @@ class QTLab_Dataset(Dataset):
         cls,
         directory=".",
         extensions=("dat", "txt", "csv"),
-        pattern=".*\d{6,6}_(?P<exp>[a-zA-Z0-9_]+)_(?P<type>[a-zA-Z0-9\-_]+?)_(?P<device>[a-zA-Z]+[0-9]+)\.(?:dat|csv|txt)",
+        pattern=r".*\d{6}_(?P<exp>[A-Za-z0-9_]+)_(?P<type>[A-Za-z0-9_-]+?)_(?P<device>[A-Za-z]+[0-9]+)\.(?:dat|csv|txt)$",
     ):
         dset = super().find(directory, extensions, pattern)
-        dset.inspect_files()
+        if "filename" in dset._dct:
+            dset.inspect_files()
         return dset
 
     def inspect_files(self):
         infolst = []
         keys = []
         for filename in self._dct["filename"]:
-            header = ""
-            info = {}
-            with open(filename, "r") as f:
-                i = 0
-                while True:
-                    i += 1
-                    ln = f.readline()
-                    if i == 2:
-                        info["timestamp"] = calendar.timegm(
-                            time.strptime(ln[17:37], "%b %d %H:%M:%S %Y")
-                        )
-                    if len(ln) > 0 and (ln[0] == "#" or ln[0] == "\n"):
-                        header += ln
-                    else:
-                        break
-
-            info["axes"] = re.findall(
-                "# Column \d+:[\s\S]+?name: (.+)\n", header)
-            comments = re.findall(
-                "# ([a-zA-Z0-9_]+): ([a-zA-Z0-9_\.]+)\n", header)
-            for comment in comments:
-                try:
-                    info[comment[0]] = float(comment[1])
-                except:
-                    info[comment[0]] = comment[1]
+            axes, info = _read_qtlab_header(filename)
+            info["axes"] = axes
 
             for key in info:
                 if not key in keys:

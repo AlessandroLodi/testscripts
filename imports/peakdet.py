@@ -1,5 +1,5 @@
 import sys
-from numpy import NaN, Inf, arange, isscalar, asarray, array
+from numpy import arange, isscalar, asarray, array, inf, nan
 
 
 def peakdet(v, delta, x=None):
@@ -44,8 +44,8 @@ def peakdet(v, delta, x=None):
     if delta <= 0:
         sys.exit('Input argument delta must be positive')
 
-    mn, mx = Inf, -Inf
-    mnpos, mxpos = NaN, NaN
+    mn, mx = inf, -inf
+    mnpos, mxpos = nan, nan
 
     lookformax = True
 

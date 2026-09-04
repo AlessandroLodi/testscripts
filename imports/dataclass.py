@@ -1,6 +1,5 @@
 import calendar
 import csv
-from imports.qtlab_data import *
 import operator as op
 import os
 import pickle
@@ -26,7 +25,7 @@ from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import RegularGridInterpolator
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.signal import medfilt, savgol_filter
 
@@ -135,8 +134,8 @@ def peakdet(v, delta, x=None):
     if delta <= 0:
         sys.exit("Input argument delta must be positive")
 
-    mn, mx = np.Inf, -np.Inf
-    mnpos, mxpos = np.NaN, np.NaN
+    mn, mx = np.inf, -np.inf
+    mnpos, mxpos = np.nan, np.nan
 
     lookformax = True
 
@@ -166,9 +165,15 @@ def peakdet(v, delta, x=None):
 
 
 def generate_color_list(cmap="gnuplot", length=1):
-    # o_cmap = get_cmap(cmap)
-    o_cmpa = ScalarMappable(cmap="viridis")
-    return [o_cmap(x / length) for x in range(length)]
+    """Return *length* evenly spaced colors from a Matplotlib color map."""
+
+    if length < 0:
+        raise ValueError("length must be non-negative")
+    if length == 0:
+        return []
+    color_map = ScalarMappable(cmap=cmap)
+    denominator = max(length - 1, 1)
+    return [color_map.to_rgba(index / denominator) for index in range(length)]
 
 
 def add_metric_prefix(d):
@@ -311,7 +316,7 @@ class Figure:
 
     def _get_axis_metric_prefix(self, dec, lim, reverse=False):
         decades = [1e-15, 1e-12, 1e-9, 1e-6, 1e-3, 1, 1e3, 1e6, 1e9, 1e12]
-        prefix = ["f", "p", "n", "\mu ", "m", "", "k", "M", "G", "T"]
+        prefix = ["f", "p", "n", r"\mu ", "m", "", "k", "M", "G", "T"]
         if reverse:
             decades = [1e15, 1e12, 1e-9, 1e6, 1e3, 1, 1e-3, 1e-6, 1e-9, 1e-12]
 
@@ -1447,19 +1452,19 @@ class Data:
     def _smooth(self, method="gaussian"):
         for key in self._data:
             d = self._data[key]
-            m = re.match("^medfilt((\d)+_(\d)+)?$", method)
+            m = re.match(r"^medfilt((\d)+_(\d)+)?$", method)
             if m:
                 try:
                     d = medfilt(d, (int(m.group(2)), int(m.group(3))))
                 except:
                     d = medfilt(d)
-            m = re.match("^gaussian(\d)*$", method)
+            m = re.match(r"^gaussian(\d)*$", method)
             if m:
                 try:
                     d = gaussian_filter(d, sigma=float(m.group(1)))  #
                 except:
                     d = gaussian_filter(d, sigma=1)  #
-            m = re.match("^savgol((\d+)_(\d+))?$", method)
+            m = re.match(r"^savgol((\d+)_(\d+))?$", method)
             if m:
                 if len(d.shape) > 1:
                     try:
@@ -1507,7 +1512,7 @@ class Data:
                 if method == "gradient":
                     dct[key] = np.gradient(self._data[key], axis=axis) / dx
                 elif "savgol" in method:
-                    m = re.match("^savgol((\d+)_(\d+))$", method)
+                    m = re.match(r"^savgol((\d+)_(\d+))$", method)
                     if m:
                         dct[key] = savgol_filter(
                             self._data[key],
@@ -1531,7 +1536,7 @@ class Data:
                 if method == "gradient":
                     dct[key] = np.gradient(self._data[key]) / dx
                 elif "savgol" in method:
-                    m = re.match("^savgol((\d+)_(\d+))$", method)
+                    m = re.match(r"^savgol((\d+)_(\d+))$", method)
                     if m:
                         dct[key] = savgol_filter(
                             self._data[key],
@@ -1934,6 +1939,8 @@ class Cyclic_Data(Data):
 
 class Dataset:
     def __str__(self):
+        if not self._dct:
+            return ""
         s = ""
         s += "\t".join([key for key in self._dct]) + "\n"
         key = next(iter(self._dct))
@@ -1946,6 +1953,8 @@ class Dataset:
         return s
 
     def __len__(self):
+        if not self._dct:
+            return 0
         return len(self._dct[next(iter(self._dct))])
 
     def __iter__(self):

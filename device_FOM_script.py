@@ -58,7 +58,7 @@ df_fom.describe()
 
 # %%
 # all the devices at all the bias voltages
-df_fom.hist(bins=, figsize=(20,15))
+df_fom.hist(bins="auto", figsize=(20,15))
 pp.show()
 
 
@@ -66,7 +66,7 @@ pp.show()
 from scipy.stats import binom
 
 n, p = 8, 0.5
-mean, var, skew, kurt = binom.stats(¬n, p, moments='mskv')
+mean, var, skew, kurt = binom.stats(n, p, moments='mskv')
 print(f" mean = {mean},\n var = {var},\n skew = {skew},\n kurt={kurt}")
 
 
@@ -165,9 +165,9 @@ vsd             = 0.5 # [V]. Bias at which the trace is take
 device_name     = 'AG_LG06_6'
 
 # bins = 'auto' uses the maximum of the Sturges and Freedman-Diaconis bin choice. You can read more about the options in the
-pp.hist(inverse_array, bins='auto', histtype='stepfilled', color='r', alpha=0.5, label='Swing $V\,/dec$')
+pp.hist(inverse_array, bins='auto', histtype='stepfilled', color='r', alpha=0.5, label=r'Swing $V\,/dec$')
 xlabel, ylabel = 5.8, 1.1 * max
-pp.text(xlabel, ylabel, f'max = {np.around(max, decimals=2)} $V\,/dec$\nmin = {np.around(min, decimals=2)} $V\,/dec$')
+pp.text(xlabel, ylabel, rf'max = {np.around(max, decimals=2)} $V\,/dec$' + "\n" + rf'min = {np.around(min, decimals=2)} $V\,/dec$')
 pp.title(f"Subthreshold Swing, Vsd = {vsd} V, device {device_name}")
 pp.xlabel("Value")
 pp.ylabel("Occurance")
@@ -184,6 +184,3 @@ max
 
 
 # %%
-
-
-
