@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transport-analysis-tools"
+version = "0.1.0"
+description = "Reusable helpers for molecular electronic-transport data analysis"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "matplotlib>=3.7",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+fit = ["lmfit>=1.2"]
+test = ["pytest>=7.4"]
+
+[tool.setuptools]
+packages = ["transport_analysis", "imports"]
+py-modules = ["helper_functions", "plotting_functions"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
