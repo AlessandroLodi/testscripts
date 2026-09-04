@@ -1,8 +1,8 @@
 # Transport analysis tools
 
 Utilities and exploratory analyses for QTLab molecular electronic-transport
-data. The reusable API lives in `transport_analysis`; the root-level scripts
-and notebooks document past, experiment-specific workflows.
+data. The reusable API lives in `transport_analysis`; a small set of retained
+notebooks documents past, experiment-specific workflows.
 
 ## Set up
 
@@ -78,15 +78,15 @@ save_figure(figure, "figures/gate_trace", formats=("png", "pdf"))
   and physical models. These retain the historical API used by the notebooks.
 - `helper_functions.py` and `plotting_functions.py`: compatibility shims for
   older notebooks.
-- root-level `.py` and `.ipynb` files: experiment-specific analyses. Many use
-  paths and parameters from the original measurement environment; copy one and
-  pass your own paths instead of editing library modules.
+- `.ipynb` files: retained experiment-specific analyses. Some use paths and
+  parameters from the original measurement environment; update those inputs
+  before running them.
 - root-level `.csv` and `.xlsx` files: example/result data used by notebooks.
 
-The legacy scripts are intentionally not imported by the package: several run
-an analysis immediately and contain machine-specific paths. New shared logic
-should be added to `transport_analysis` as a small function with no `chdir`,
-plot display, or file write at import time.
+Obsolete scripts that ran analyses at import time against machine-specific
+paths are intentionally excluded. New shared logic should be added to
+`transport_analysis` as a small function with no `chdir`, plot display, or
+file write at import time.
 
 ## Compatibility
 
